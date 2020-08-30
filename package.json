@@ -1,0 +1,97 @@
+{
+  "name": "@ngnjs/net",
+  "version": "1.0.0-alpha",
+  "description": "A network communications plugin for NGN.",
+  "type": "module",
+  "author": "Corey Butler\n",
+  "private": false,
+  "license": "MIT",
+  "homepage": "https://github.com/ngnjs/net",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ngnjs/net.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ngnjs/net/issues"
+  },
+  "main": "src/index.js",
+  "peerDependencies": {
+    "ngn": "^2.0.0",
+    "@author.io/dev": "^1.0.15"
+  },
+  "scripts": {
+    "test": "npm run test:node && npm run test:deno && npm run test:browser && npm run report:syntax && npm run report:size",
+    "start": "dev workspace",
+    "build": "dev build",
+    "test:node": "dev test -rt node tests/*.js",
+    "test:node:fetch": "dev test -rt node tests/*-fetch.js",
+    "test:request:node": "dev test -rt node tests/*-request.js",
+    "test:resource:node": "dev test -rt node tests/*-resource.js",
+    "test:client:node": "dev test -rt node tests/*-client.js",
+    "test:deno": "dev test -rt deno tests/*.js",
+    "test:request:deno": "dev test -rt deno tests/*-request.js",
+    "test:client:deno": "dev test -rt deno tests/*-client.js",
+    "test:resource:deno": "dev test -rt deno tests/*-resource.js",
+    "test:browser": "dev test -rt browser tests/*.js",
+    "test:request:browser": "dev test -rt browser tests/*-request.js",
+    "test:client:browser": "dev test -rt browser tests/*-client.js",
+    "test:resource:browser": "dev test -rt browser tests/*-resource.js",
+    "manually": "dev test -rt manual tests/*.js",
+    "report:syntax": "dev report syntax --pretty",
+    "report:size": "dev report size ./.dist/**/*.js ./.dist/**/*.js.map",
+    "report:compat": "dev report compatibility ./src/**/*.js",
+    "report:preview": "npm pack --dry-run && echo \"==============================\" && echo \"This report shows what will be published to the module registry. Pay attention to the tarball contents and assure no sensitive files will be published.\"",
+    "update": "npm update --save --save-dev --save-optional"
+  },
+  "dev": {
+    "mode": "source",
+    "volume": [
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/test/TapParser.js:/utility/test/TapParser.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/runners/size.js:/utility/test/size.js",
+      "/Users/cbutler/Workspace/OSS/js/@butlerlogic/common-api/index.js:/node_modules/@butlerlogic/common-api/index.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/test/replace.js:/utility/test/replace.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/test/assets:/utility/test/assets",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/test/httpserver.js:/utility/test/httpserver.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/runners/chromium.js:/utility/test/run-browser.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/runners/manual.js:/utility/test/run-manual.js",
+      "/Users/cbutler/Workspace/OSS/js/coreybutler/tappedout:/node_modules/tappedout",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/test/utilities.js:/utility/test/utilities.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/runners/node.js:/utility/test/run-node.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/runners/size.js:/utility/test/size.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/build/lib/package.js:/utility/build/lib/package.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/build/rollup.config.js:/utility/build/rollup.config.js",
+      "/Users/cbutler/Workspace/OSS/js/@author.io/dev/image/app/test/utilities.js:/utility/test/utilities.js",
+      "../core/.dist/ngn:/node_modules/ngn",
+      "../core/src:/source/ngn",
+      "../plugin/.dist/plugin:/node_modules/@ngnjs/plugin",
+      "../plugin/src:/source/@ngnjs/plugin",
+      "../libdata/.dist/libdata:/node_modules/@ngnjs/libdata",
+      "../libdata/src:/source/@ngnjs/libdata",
+      "../libnet-node/.dist/libnet-node:/node_modules/@ngnjs/libnet-node",
+      "../libnet-node/src:/source/@ngnjs/libnet-node"
+    ],
+    "http_server": "./tests/assets/server.js",
+    "source": {
+      "buildoption": {
+        "preserveEntrySignatures": true
+      },
+      "autoimport": [
+        "import NGN from 'ngn'"
+      ],
+      "alias": {
+        "ngn": "/node_modules/ngn/index.js",
+        "@ngnjs/plugin": "/source/@ngnjs/plugin/index.js",
+        "@ngnjs/libdata": "/source/@ngnjs/libdata/index.js",
+        "@ngnjs/libnet-node": "/source/@ngnjs/libnet-node/index.js",
+        "@ngnjs/net": "/app/src/index.js"
+      }
+    }
+  },
+  "standard": {
+    "globals": [
+      "globalThis",
+      "window",
+      "global"
+    ]
+  }
+}
