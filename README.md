@@ -174,14 +174,3 @@ const feature = new Network()
 
 console.log(feature)
 ```
-
-## Plugin Authoring Instructions (Remove these)
-
-This project template supports creation of NGN plugins. This template can be used directly, but was designed to be implemented with [NGND (NGN Dev) CLI tool](https"//github/com/ngnjs/cli).
-
-The template contains:
-
-1. Starter Source Code
-1. Unit Test Boilerplate
-1. CI/CD Runner
-1. Autopublishing (triggered on new `package.json` versions in master branch)
