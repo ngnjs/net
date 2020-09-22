@@ -1,6 +1,6 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "description": "A network communications plugin for NGN.",
   "type": "module",
   "author": "Corey Butler\n",
@@ -15,6 +15,8 @@
     "url": "https://github.com/ngnjs/net/issues"
   },
   "main": "src/index.js",
+  "module": "index.js",
+  "browser": "./index.js",
   "peerDependencies": {
     "ngn": "^2.0.0-alpha.5",
     "@ngnjs/plugin": ">=1.0.0-alpha.9",
