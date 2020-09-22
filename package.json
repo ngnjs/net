@@ -1,6 +1,6 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "description": "A network communications plugin for NGN.",
   "type": "module",
   "author": "Corey Butler\n",
@@ -50,21 +50,27 @@
     "report:compat": "dev report compatibility ./src/**/*.js",
     "report:preview": "npm pack --dry-run && echo \"==============================\" && echo \"This report shows what will be published to the module registry. Pay attention to the tarball contents and assure no sensitive files will be published.\"",
     "update": "npm update --save --save-dev --save-optional",
-    "ci": "dev test --verbose --mode ci --peer -rt node tests/*.js && dev test --mode ci -rt deno tests/*.js && dev test --mode ci -rt browser tests/*.js"
+    "ci": "dev test --mode ci --peer -rt browser tests/*.js"
   },
   "dev": {
     "mode": "source",
     "http_server": "./tests/assets/server.js",
-    "embed": [
-      "@ngnjs/plugin",
-      "@ngnjs/libdata"
-    ],
     "replace": {
       "<#REPLACE_VERSION#>": "package.version"
     },
+    "autoimport": [
+      "import NGN from 'ngn'"
+    ],
     "ci": {
       "verbose": true,
       "peer": true,
+      "embed": [
+        "@ngnjs/plugin",
+        "@ngnjs/libdata"
+      ],
+      "buildoption": {
+        "preserveEntrySignatures": true
+      },
       "alias": {
         "ngn": "/node_modules/ngn/index.js",
         "@ngnjs/libdata": "/node_modules/@ngnjs/libdata/index.js",
@@ -87,9 +93,6 @@
       "buildoption": {
         "preserveEntrySignatures": true
       },
-      "autoimport": [
-        "import NGN from 'ngn'"
-      ],
       "alias": {
         "ngn": "/node_modules/ngn/index.js",
         "@ngnjs/plugin": "/source/@ngnjs/plugin/index.js",
