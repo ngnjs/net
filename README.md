@@ -1,4 +1,4 @@
-# Network NGN Plugin
+<h1 align="center">NGN Network<br/><img src="https://img.shields.io/npm/v/@ngnjs/net?label=%40ngnjs/net&logo=npm&style=social"/></h1>
 
 The NGN network plugin provides two major building blocks:
 
@@ -137,7 +137,7 @@ The Client, Resource, and URL classes all implement an `NGN.EventEmitter`. This 
 
 ### Fetch API: ReferrerPolicy & Cache
 
-Deno doesn't support fetch ReferrerPolicy & Cache. Deno is working on cache support, but will likely not implement ReferrerPolicy. Node.js doesn't support these either, but the `@ngnjs/libnet-node` plugin can polyfill such features. 
+Deno doesn't support fetch ReferrerPolicy & Cache. Deno is working on cache support, but will likely not implement ReferrerPolicy. Node.js doesn't support these either, but the `@ngnjs/libnet-node` plugin can polyfill such features.
 
 ReferrerPolicy is less likely to be necessary in non-browser environments, with the exception of a limited set of proxy and API applications.
 
