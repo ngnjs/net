@@ -17,7 +17,12 @@ The following features are also included:
 The HTTP client provides an intuitive way to execute HTTP requests. All major HTTP methods are supported (`GET`, `POST`, `PUT`, `DELETE`, `HEAD`, `OPTIONS`, & `TRACE`). Two additional "helper" methods exist for accessing JSON data: `JSON` and `JSONP` (only used in browser runtimes).
 
 ```javascript
-import { Client } from '@ngnjs/net'
+// Browser/Deno Runtime
+import NGN from 'https://cdn.skypack.dev/ngn'
+import { Client } from 'https://cdn.skypack.dev/@ngnjs/net'
+// Node Runtime
+// import NGN from 'ngn'
+// import { Client } from '@ngnjs/ngn'
 
 const client = new Client()
 
@@ -142,35 +147,3 @@ Deno doesn't support fetch ReferrerPolicy & Cache. Deno is working on cache supp
 ReferrerPolicy is less likely to be necessary in non-browser environments, with the exception of a limited set of proxy and API applications.
 
 The ReferrerPolicy polyfill in `@ngnjs/libnet-node` currently uses the `os` module to identify the server hostname & IP address. This is used to help determine when a referrer is on the same host or not. The hostname feature does not yet exist in Deno, but is on the Deno roadmap. When support for this is available, a ReferrerPolicy polyfill will be made for Deno (if there is enough interest).
-
---
-
-Everything below is boilerplate from the plugin generation tool (can be removed when ready)
---
-A plugin module for NGN.
-
-## Usage
-
-### Via CDN (Browser/Deno)
-
-```javascript
-import NGN from 'https://cdn.skypack.dev/ngn'
-import Network from 'https://cdn.skypack.dev/@ngnjs/network'
-
-const feature = new Network()
-
-console.log(feature)
-```
-
-### Node
-
-`npm i ngn @ngnjs/network -S`
-
-```javascript
-import NGN from 'ngn'
-import Network from '@ngnjs/network'
-
-const feature = new Network()
-
-console.log(feature)
-```
