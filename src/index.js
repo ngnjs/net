@@ -15,3 +15,5 @@ export {
   Client,
   Resource
 }
+
+export const moduleVersion = '<#REPLACE_VERSION#>'
