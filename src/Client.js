@@ -4,7 +4,7 @@ import NgnRequest from './lib/Request.js'
 import { HOSTNAME } from './lib/constants.js'
 import { coalesceb } from '@ngnjs/libdata'
 
-const NGN = new Reference('^2.0.0').requires('EventEmitter', 'WARN')
+const NGN = new Reference().requires('EventEmitter', 'WARN')
 const { WARN } = NGN
 
 /**
@@ -28,16 +28,16 @@ export default class HttpClient extends NGN.EventEmitter {
        * @return {string}
        * The normalized URL.
        */
-      normalizeUrl: NGN.privateconstant(url => (new Address(url)).toString({ username: true, password: true, urlencode: false })),
+      normalizeUrl: NGN.hiddenconstant(url => (new Address(url)).toString({ username: true, password: true, urlencode: false })),
 
-      parseRequestConfig: NGN.privateconstant((cfg = {}, method = 'GET') => {
+      parseRequestConfig: NGN.hiddenconstant((cfg = {}, method = 'GET') => {
         cfg = typeof cfg === 'string' ? { url: cfg } : cfg
         cfg.method = method
         cfg.url = coalesceb(cfg.url, HOSTNAME)
         return cfg
       }),
 
-      send: NGN.privateconstant((method, argv) => {
+      send: NGN.hiddenconstant((method, argv) => {
         const args = argv ? Array.from(argv) : []
         const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null
         const request = new NgnRequest(this.parseRequestConfig(...args, method.toUpperCase()))

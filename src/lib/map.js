@@ -1,7 +1,7 @@
 import Reference from '@ngnjs/plugin'
 import { forceString } from '@ngnjs/libdata'
 
-const NGN = new Reference('^2.0.0').requires('EventEmitter')
+const NGN = new Reference().requires('EventEmitter')
 
 /**
  * This class provides an Map object with additional

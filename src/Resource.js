@@ -5,7 +5,7 @@ import Request from './lib/Request.js'
 import { HOSTNAME, HTTP_METHODS } from './lib/constants.js'
 import { coalesce, coalesceb } from '@ngnjs/libdata'
 
-const NGN = new Reference('>=2.0.0').requires('WARN')
+const NGN = new Reference().requires('WARN')
 const { WARN } = NGN
 
 /**

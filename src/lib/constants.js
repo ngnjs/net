@@ -1,5 +1,5 @@
 import Reference from '@ngnjs/plugin'
-const NGN = new Reference('>=2.0.0')
+const NGN = new Reference()
 
 export const DEFAULT_PORT = {
   http: 80,

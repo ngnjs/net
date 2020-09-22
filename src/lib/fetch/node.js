@@ -3,7 +3,7 @@ import { coalesce, coalesceb } from '@ngnjs/libdata'
 import { cacheStatusCodes, HTTP_REDIRECT, REDIRECTS } from './constants.js'
 import { HOSTNAME, URL_PATTERN } from '../constants.js'
 
-const NGN = new Reference('>=2.0.0').requires('runtime', 'WARN', 'private')
+const NGN = new Reference().requires('runtime', 'WARN', 'hidden')
 
 // Stubs for Node
 let POLYFILLED = false

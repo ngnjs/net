@@ -1,7 +1,7 @@
 import { coalesceb } from '@ngnjs/libdata'
 import Reference from '@ngnjs/plugin'
 
-const NGN = new Reference('>=2.0.0')
+const NGN = new Reference()
 
 export default class Credential extends NGN.EventEmitter {
   #user = null
@@ -53,7 +53,7 @@ export default class Credential extends NGN.EventEmitter {
        * @return {string} [description]
        * @private
        */
-      basicAuthToken: NGN.privateconstant((user, secret) => {
+      basicAuthToken: NGN.hiddenconstant((user, secret) => {
         // Binary to base64-ascii conversions
         if (NGN.runtime === 'node') {
           return `Basic ${Buffer.from(`${user}:${secret}`, 'binary').toString('base64')}`

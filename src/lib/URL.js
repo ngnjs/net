@@ -2,7 +2,7 @@ import { DEFAULT_PORT, HOSTNAME, INTERFACES, URL_RELATIVE_PATTERN } from './cons
 import { coalesce, coalesceb, forceBoolean, forceNumber } from '@ngnjs/libdata'
 import Reference from '@ngnjs/plugin'
 
-const NGN = new Reference('>=2.0.0').requires('EventEmitter', 'WARN')
+const NGN = new Reference().requires('EventEmitter', 'WARN')
 const localschemes = new Set(INTERFACES.map(host => host.trim().toLowerCase()))
 
 /**

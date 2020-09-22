@@ -17,7 +17,15 @@
   "main": "src/index.js",
   "peerDependencies": {
     "ngn": "^2.0.0",
-    "@author.io/dev": "^1.0.15"
+    "@ngnjs/plugin": ">=1.0.0-alpha.9",
+    "@ngnjs/libnet-node": ">=1.0.0-alpha",
+    "@ngnjs/libdata": ">=1.0.0-alpha.1"
+  },
+  "devDependencies": {
+    "@author.io/dev": "^1.1.2",
+    "@ngnjs/plugin": "^1.0.0-alpha",
+    "@ngnjs/plugin-debug": "^1.0.0-alpha",
+    "@ngnjs/net-debug": "^1.0.0-alpha"
   },
   "scripts": {
     "test": "npm run test:node && npm run test:deno && npm run test:browser && npm run report:syntax && npm run report:size",
@@ -41,22 +49,37 @@
     "report:size": "dev report size ./.dist/**/*.js ./.dist/**/*.js.map",
     "report:compat": "dev report compatibility ./src/**/*.js",
     "report:preview": "npm pack --dry-run && echo \"==============================\" && echo \"This report shows what will be published to the module registry. Pay attention to the tarball contents and assure no sensitive files will be published.\"",
-    "update": "npm update --save --save-dev --save-optional"
+    "update": "npm update --save --save-dev --save-optional",
+    "ci": "dev test --verbose --mode ci --peer -rt node tests/*.js && dev test --mode ci -rt deno tests/*.js && dev test --mode ci -rt browser tests/*.js"
   },
   "dev": {
     "mode": "source",
-    "volume": [
-      "../core/.dist/ngn:/node_modules/ngn",
-      "../core/src:/source/ngn",
-      "../plugin/.dist/plugin:/node_modules/@ngnjs/plugin",
-      "../plugin/src:/source/@ngnjs/plugin",
-      "../libdata/.dist/libdata:/node_modules/@ngnjs/libdata",
-      "../libdata/src:/source/@ngnjs/libdata",
-      "../libnet-node/.dist/libnet-node:/node_modules/@ngnjs/libnet-node",
-      "../libnet-node/src:/source/@ngnjs/libnet-node"
-    ],
     "http_server": "./tests/assets/server.js",
+    "embed": [
+      "@ngnjs/plugin"
+    ],
+    "ci": {
+      "verbose": true,
+      "peer": true,
+      "alias": {
+        "ngn": "/node_modules/ngn/index.js",
+        "@ngnjs/libdata": "/node_modules/@ngnjs/libdata/index.js",
+        "@ngnjs/plugin": "/node_modules/@ngnjs/plugin/index.js",
+        "@ngnjs/libnet-node": "/node_modules/@ngnjs/libnet-node/index.js",
+        "@ngnjs/net": "/app/.dist/net/index.js"
+      }
+    },
     "source": {
+      "volume": [
+        "../core/.dist/ngn:/node_modules/ngn",
+        "../core/src:/source/ngn",
+        "../plugin/.dist/plugin:/node_modules/@ngnjs/plugin",
+        "../plugin/src:/source/@ngnjs/plugin",
+        "../libdata/.dist/libdata:/node_modules/@ngnjs/libdata",
+        "../libdata/src:/source/@ngnjs/libdata",
+        "../libnet-node/.dist/libnet-node:/node_modules/@ngnjs/libnet-node",
+        "../libnet-node/src:/source/@ngnjs/libnet-node"
+      ],
       "buildoption": {
         "preserveEntrySignatures": true
       },

@@ -18,7 +18,7 @@ import Reference from '@ngnjs/plugin'
 import { coalesceb } from '@ngnjs/libdata'
 import { REDIRECTS } from './constants.js'
 
-const NGN = new Reference('>=2.0.0').requires('runtime', 'INFO')
+const NGN = new Reference().requires('runtime', 'INFO')
 
 // Load the runtime-specific fetch method.
 // Both runtime fetch methods are abstracted from this

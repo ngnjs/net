@@ -13,7 +13,7 @@ import {
 } from './constants.js'
 import Credential from './Credential.js'
 
-const NGN = new Reference('>=2.0.0').requires('WARN', 'public', 'private', 'privateconstant', 'nodelike', 'EventEmitter')
+const NGN = new Reference().requires('WARN', 'public', 'hidden', 'hiddenconstant', 'nodelike', 'EventEmitter')
 const { WARN } = NGN
 
 /**
@@ -188,7 +188,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
        * sent to a remote server with an unsage method. Set this configuration
        * to `false` to prevent requests from enforcing idempotence/safety.
        */
-      enforceMethodSafety: NGN.private(coalesce(cfg.enforceMethodSafety, cfg.enforcemethodsafety, true)),
+      enforceMethodSafety: NGN.hidden(coalesce(cfg.enforceMethodSafety, cfg.enforcemethodsafety, true)),
 
       /**
        * @cfgproperty {Number} [timeout=30000]
@@ -205,7 +205,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
        * @returns {boolean}
        * @private
        */
-      isCrossOrigin: NGN.privateconstant(url => this.#uri.isSameOrigin(url)),
+      isCrossOrigin: NGN.hiddenconstant(url => this.#uri.isSameOrigin(url)),
 
       /**
        * @method applyAuthorizationHeader
@@ -213,7 +213,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
        * based on the presence of #username, #password, or #accessToken.
        * @private
        */
-      applyAuthorizationHeader: NGN.privateconstant(() => {
+      applyAuthorizationHeader: NGN.hiddenconstant(() => {
         const authHeader = this.#auth.header
         const proxyAuthHeader = this.#proxyAuth.header
 
@@ -230,7 +230,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
         }
       }),
 
-      prepareBody: NGN.private(() => {
+      prepareBody: NGN.hidden(() => {
         // Request body management
         if (this.#body !== null) {
           const contentType = coalesceb(this.getHeader('content-type'))
