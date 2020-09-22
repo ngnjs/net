@@ -1,5 +1,7 @@
 <h1 align="center">NGN Network<br/><img src="https://img.shields.io/npm/v/@ngnjs/net?label=%40ngnjs/net&logo=npm&style=social"/></h1>
 
+Live examples on [codepen](https://codepen.io/coreybutler/pen/WNwLOxa).
+
 The NGN network plugin provides two major building blocks:
 
 1. HTTP `Client`
