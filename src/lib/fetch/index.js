@@ -27,20 +27,27 @@ const NGN = new Reference().requires('runtime', 'INFO')
 // not add much additional overhead, but this strategy
 // will eliminate unnecessary code in the tree-shaking
 // phase of any build process.
-let request
+let client
 let POLYFILLED = false
-; (async () => {
-  if (!request) {
-    if (NGN.runtime === 'node') {
-      request = await import('./node.js').catch(console.error)
-      POLYFILLED = request.POLYFILLED !== undefined ? request.POLYFILLED : POLYFILLED
-    } else {
-      request = await import('./fetch.js').catch(console.error)
-    }
+function createClient () {
+  return new Promise(async resolve => { // eslint-disable-line no-async-promise-executor
+    if (!client) {
+      if (NGN.runtime === 'node') {
+        client = await import('./node.js').catch(console.error)
+        POLYFILLED = client.POLYFILLED !== undefined ? client.POLYFILLED : POLYFILLED
+      } else {
+        client = await import('./fetch.js').catch(console.error)
+      }
 
-    request = request.default
-  }
-})()
+      client = client.default
+      resolve(client)
+    } else {
+      resolve(client)
+    }
+  })
+}
+
+createClient().catch(console.error)
 
 export { POLYFILLED }
 
@@ -63,21 +70,23 @@ export default async function Fetch (resource, init, caller = null) {
       return reject(new Error('CONNECT is not a valid fetch method. It is only used for opening network tunnels, not complete HTTP requests.'))
     }
 
-    request(resource, init).then(r => {
-      resolve(r)
+    createClient().then(request => {
+      request(resource, init).then(r => {
+        resolve(r)
 
-      const redirects = init[REDIRECTS]
-      delete init[REDIRECTS]
+        const redirects = init[REDIRECTS]
+        delete init[REDIRECTS]
 
-      NGN.INFO('HTTP Request', {
-        request: Object.assign({}, {
-          url: resource.href,
-          redirects
-        }, init),
-        response: r,
-        caller,
-        runtime: NGN.runtime
-      })
+        NGN.INFO('HTTP Request', {
+          request: Object.assign({}, {
+            url: resource.href,
+            redirects
+          }, init),
+          response: r,
+          caller,
+          runtime: NGN.runtime
+        })
+      }).catch(reject)
     }).catch(reject)
   })
 }
