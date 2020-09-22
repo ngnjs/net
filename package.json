@@ -1,6 +1,6 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-alpha.1",
   "description": "A network communications plugin for NGN.",
   "type": "module",
   "author": "Corey Butler\n",
@@ -16,7 +16,7 @@
   },
   "main": "src/index.js",
   "peerDependencies": {
-    "ngn": "^2.0.0",
+    "ngn": "^2.0.0-alpha.5",
     "@ngnjs/plugin": ">=1.0.0-alpha.9",
     "@ngnjs/libnet-node": ">=1.0.0-alpha",
     "@ngnjs/libdata": ">=1.0.0-alpha.1"
@@ -56,7 +56,8 @@
     "mode": "source",
     "http_server": "./tests/assets/server.js",
     "embed": [
-      "@ngnjs/plugin"
+      "@ngnjs/plugin",
+      "@ngnjs/libdata"
     ],
     "ci": {
       "verbose": true,
