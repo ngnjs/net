@@ -51,6 +51,7 @@ export const REFERRER_MODES = new Set([
 ])
 
 export const REQUEST_CREDENTIALS = new Set(['omit', 'same-origin', 'include'])
+export const REDIRECT_MODES = new Set(['follow', 'error', 'manual'])
 
 export const IDEMPOTENT_METHODS = new Set(['OPTIONS', 'HEAD', 'GET'])
 export const REQUEST_NOBODY_METHODS = new Set(['HEAD', 'GET'])

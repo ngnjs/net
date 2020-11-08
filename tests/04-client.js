@@ -70,13 +70,16 @@ test('HTTP Requests', async t => {
   res = await client.DELETE(url).catch(console.error)
   t.expect(200, res.status, 'DELETE sends and receives.')
 
-  let body = await client.JSON({ url: url + '/test.json', mode: 'no-cors' }).catch(console.error)
+  let body = await client.JSON({ url: url + '/test.json' }).catch(console.error)
   t.expect('object', typeof body, 'JSON autoparses objects and returns the result.')
   t.expect('worked', body.result, 'Recognized JSON object values.')
 
   if (ngn.runtime === 'browser') {
     body = await client.JSONP(url + '/jsonp/test.json').catch(console.error)
     t.expect('worked', body.result, 'JSONP retrieves data via script tag.')
+
+    body = await client.JSON({ url: url + '/test.json', mode: 'no-cors' }).catch(console.error)
+    t.expect(null, body, 'no-cors mode does not provide response body.')
   } else {
     await client.JSONP(url + '/test.json').then(r => t.fail('JSONP should throw an error in non-browser runtimes.')).catch(e => t.pass(e.message))
   }

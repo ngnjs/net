@@ -2,7 +2,7 @@ import Reference from '@ngnjs/plugin'
 import Client from './Client.js'
 import Address from './lib/URL.js'
 import Request from './lib/Request.js'
-import { HOSTNAME, HTTP_METHODS } from './lib/constants.js'
+import { HOSTNAME, HTTP_METHODS, REDIRECT_MODES } from './lib/constants.js'
 import { coalesce, coalesceb } from '@ngnjs/libdata'
 
 const NGN = new Reference().requires('WARN')
@@ -75,6 +75,12 @@ export default class Resource extends Client {
   #tlsonly
   #useragent
   #uniqueagent
+  #mode
+  #credentials
+  #cache
+  #redirect
+  #referrer
+  #referrerPolicy
 
   constructor (cfg = {}) {
     super()
@@ -98,8 +104,57 @@ export default class Resource extends Client {
       headers: coalesceb(cfg.headers, {}),
       username: cfg.username,
       password: cfg.password,
-      accessToken: coalesceb(cfg.token, cfg.accessToken, cfg.accesstoken)
+      accessToken: coalesceb(cfg.token, cfg.accessToken, cfg.accesstoken),
+      /**
+       * @cfgproperty {string} [redirect=follow] (follow,error,manual)
+       * The redirect mode to use:
+       * - `follow`: automatically follow redirects
+       * - `error`: abort with an error if a redirect occurs
+       * - `manual`: handle redirects manually
+       */
+      redirect: coalesce(cfg.redirect, this.#redirect, 'follow')
     })
+
+    /**
+     * @cfgproperty {string} [mode] (cors,no-cors,same-origin)
+     * The mode to use when making a request.
+     */
+    if (cfg.mode) {
+      this.#request.mode = cfg.mode
+    }
+
+    /**
+     * @cfgproperty {string} [credentials] (omit,same-origin,include)
+     * The request credentials to use for the request.
+     * To automatically send cookies for the current domain,
+     * this option must be provided. In browsers, starting with
+     * Chrome 50, this property also takes a FederatedCredential
+     * instance or a PasswordCredential instance.
+     */
+    if (cfg.credentials) {
+      this.#request.credentials = cfg.credentials
+    }
+
+    /**
+     * @cfgproperty {string} [referrer]
+     * A USVString specifying the referrer of the request.
+     * This can be a same-origin URL, `about:client`, or an empty
+     * string.
+     */
+    if (cfg.referrer) {
+      this.#request.referrer = cfg.referrer
+    }
+
+    /**
+     * @cfgproperty {string} [referrerPolicy=no-referrer-when-downgrade] (no-referrer,no-referrer-when-downgrade,same-origin,origin,strict-origin,origin-when-cross-origin,strict-origin-when-cross-origin,unsafe-url)
+     * Identify the referrer policy to use in requests.
+     * Node.js environments do not natively support referrerPolicy.
+     * The NGN [libnet-node](https://github.com/ngnjs/libnet-node) module
+     * is available to add support for this functionality.
+     */
+    if (cfg.referrerPolicy) {
+      this.#request.referrerPolicy = cfg.referrerPolicy
+    }
 
     this.#secret = coalesceb(cfg.password)
 
@@ -116,22 +171,22 @@ export default class Resource extends Client {
     }
 
     /**
-     * @cfg {object} headers
+     * @cfgproperty {object} headers
      * Common headers (key/value) applied to all requests.
      */
 
     /**
-     * @cfg {string} username
+     * @cfgproperty {string} username
      * Username to be applied to all requests.
      */
 
     /**
-     * @cfg {string} password
+     * @cfgproperty {string} password
      * Password to be applied to all requests.
      */
 
     /**
-     * @cfg {string} accessToken
+     * @cfgproperty {string} accessToken
      * Access token to be applied to all requests.
      * Setting this overrides any existing username/password credentials.
      */
@@ -156,6 +211,18 @@ export default class Resource extends Client {
      * attribute can be set to `true` to apply unique characters to the URL.
      */
     this.#nocache = coalesce(cfg.nocache, false)
+
+    /**
+     * @cfgproperty {string} [cache=default] (default,no-store,reload,no-cache,force-cache,only-if-cached)
+     * Identify the caching mechanism to be used. This option is ignored
+     * when #nocache is specified. See the [list of options](https://developer.mozilla.org/en-US/docs/Web/API/Request/cache)
+     * for details.
+     */
+    if (!this.#nocache) {
+      this.#cache = cfg.cache
+    } else {
+      this.#cache = 'no-cache'
+    }
 
     /**
      * @cfg {boolean} [unique=false]
@@ -222,6 +289,35 @@ export default class Resource extends Client {
 
   set password (value) {
     this.#request.password = value
+  }
+
+  get cache () { return this.#cache }
+  set cache (value) { this.#request.cache = value }
+
+  get mode () { return this.#mode }
+  set mode (value) { this.#request.mode = value }
+
+  get credentials () { return this.#credentials }
+  set credentials (value) { this.#request.credentials = value }
+
+  get redirect () { return this.#redirect }
+  set redirect (value) {
+    if (value !== this.#redirect) {
+      if (!REDIRECT_MODES.has(value)) {
+        throw UnacceptableParameterTypeError() // eslint-disable-line no-undef
+      }
+      this.#request.redirect = value
+    }
+  }
+
+  get referrer () { return this.#referrer }
+  set referrer (value) {
+    this.#request.referrer = value
+  }
+
+  get referrerPolicy () { return this.#referrerPolicy }
+  set referrerPolicy (value) {
+    this.#request.referrerPolicy = value
   }
 
   /**
@@ -447,7 +543,7 @@ export default class Resource extends Client {
 
     // Set no-cache header if configured.
     if (this.#nocache) {
-      req.cacheMode = 'no-cache'
+      req.cache = 'no-cache'
     }
 
     // Force unique URL
@@ -613,6 +709,12 @@ export default class Resource extends Client {
     const resource = new Resource({
       baseUrl: coalesceb(cfg.baseUrl, this.#baseUrl.href),
       headers: coalesceb(cfg.headers, this.headers),
+      mode: coalesceb(cfg.mode, this.#mode),
+      credentials: coalesceb(cfg.credentials, this.#credentials),
+      cache: coalesceb(cfg.cache, this.#cache),
+      redirect: coalesceb(cfg.redirect, this.#redirect),
+      referrer: coalesceb(cfg.referrer, this.#referrer),
+      referrerPolicy: coalesceb(cfg.referrerPolicy, this.#referrerPolicy),
       username: coalesceb(cfg.username, this.username),
       password: coalesceb(cfg.password, this.#secret),
       accessToken: coalesceb(cfg.accessToken, this.#accessToken),

@@ -7,9 +7,11 @@ import {
   IDEMPOTENT_METHODS,
   REQUEST_NOBODY_METHODS,
   REQUEST_CREDENTIALS,
+  REFERRER_MODES,
   HTTP_METHODS,
   CORS_MODES,
-  CACHE_MODES
+  CACHE_MODES,
+  REDIRECT_MODES
 } from './constants.js'
 import Credential from './Credential.js'
 
@@ -24,16 +26,17 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
   #method = 'GET'
   #headers = new Headers()
   #body = null
-  #cacheMode = 'default'
-  #corsMode = 'cors'
+  #cache = 'default'
+  #mode = 'cors'
   referrer = null
   #referrerPolicy = 'no-referrer-when-downgrade'
+  #credentials
+  #redirect = 'follow'
   sri = null
   #controller
   #uri
   #auth
   #proxyAuth
-  #credentials
   #rawURL
 
   constructor (cfg = {}) {
@@ -128,16 +131,20 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     this.#body = coalesce(cfg.body)
 
     /**
-     * @cfg {string} [credentials=include]
-     * The request credentials you want to use for the request:
-     * `omit`, `same-origin`, or `include`. To automatically
-     * send cookies for the current domain, this option must be
-     * provided.
+     * @cfgproperty {string} [credentials] (omit,same-origin,include)
+     * The request credentials to use for the request.
+     * To automatically send cookies for the current domain,
+     * this option must be provided. In browsers, starting with
+     * Chrome 50, this property also takes a FederatedCredential
+     * instance or a PasswordCredential instance.
+     *
+     * To automatically send cookies for the current domain, this
+     * option must be provided.
      */
-    this.#credentials = coalesceb(cfg.credentials)
+    this.credentials = coalesceb(cfg.credentials)
 
     /**
-     * @cfgproperty {string} [cacheMode=default] (default, no-store, reload, no-cache, force-cache, only-if-cached)
+     * @cfgproperty {string} [cache=default] (default, no-store, reload, no-cache, force-cache, only-if-cached)
      * The [caching mechanism](https://developer.mozilla.org/en-US/docs/Web/API/Request/cache) applied to the request.
      * Node-like environments do not have a native HTTP cache. NGN provides
      * a limited HTTP cache for Node-like environments, adhering to the principles
@@ -148,7 +155,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
      * @warning Browsers are the only runtime to support this feature natively. The
      * NGN libnet-node plugin adds support for modern Node.js runtimes.
      */
-    this.cacheMode = coalesce(cfg.cacheMode, NGN.nodelike ? 'no-store' : 'default')
+    this.cache = coalesce(cfg.cache, NGN.nodelike ? 'no-store' : 'default')
 
     /**
      * @cfgproperty {string} [referrer]
@@ -174,6 +181,24 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
      * NGN libnet-node plugin adds support for modern Node.js runtimes.
      */
     this.sri = coalesceb(cfg.sri, cfg.integrity, cfg.subresourceintegrity, cfg.subresourceIntegrity)
+
+    /**
+     * @cfgproperty {string} [redirect=follow] (follow,error,manual)
+     * The redirect mode to use:
+     * - `follow`: automatically follow redirects
+     * - `error`: abort with an error if a redirect occurs
+     * - `manual`: handle redirects manually
+     */
+    this.redirect = coalesceb(cfg.redirect, 'follow')
+
+    /**
+     * @cfgproperty {string} [mode] (cors,no-cors,same-origin,null)
+     * The mode to use when making a request. When set to `null`,
+     * the default mode is used. The default differs by request
+     * initiation. See the [MDN default mode notes](https://developer.mozilla.org/en-US/docs/Web/API/Request/mode)
+     * for.
+     */
+    this.mode = coalesceb(cfg.mode)
 
     Object.defineProperties(this, {
       /**
@@ -393,57 +418,58 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     return this.#proxyAuth.authType
   }
 
-  get cacheMode () {
-    return this.#cacheMode
+  get cache () {
+    return this.#cache
   }
 
-  set cacheMode (value) {
+  set cache (value) {
     value = coalesceb(value, 'default')
     if (typeof value !== 'string') {
       throw new Error(`Cache mode must be one of the following: ${Array.from(CACHE_MODES).join(', ')}. "${value}" is invalid.`)
     }
 
-    const old = this.#cacheMode
+    if (this.#cache !== value) {
+      const old = this.#cache
 
-    value = value.trim().toLowerCase()
-
-    if (!CACHE_MODES.has(value)) {
-      throw new Error(`"${value}" is an unrecognized cache mode.Must be one of: ${Array.from(CACHE_MODES).join(', ')}.`)
-    } else {
-      this.#cacheMode = value
-    }
-
-    if (value === 'only-if-cached' && this.#corsMode !== 'same-origin') {
-      this.corsMode = 'same-origin'
-      WARN('Request\'s CORS mode automatically set to "same-origin" for caching mode of "only-if-cached".')
-    }
-
-    if (old !== value) {
-      this.emit('update.cachemode', { old, new: value })
-    }
-  }
-
-  get corsMode () {
-    return this.#corsMode
-  }
-
-  set corsMode (value) {
-    if (value === null || value === undefined || typeof value !== 'string') {
-      throw new Error(`CORS mode must be cors, no-cors, or same-origin. "${value}" is invalid.`)
-    }
-
-    const old = this.#corsMode
-
-    if (this.#cacheMode !== 'only-if-cached') {
       value = value.trim().toLowerCase()
-      if (!CORS_MODES.has(value)) {
-        throw new Error(`"${value} is an invalid CORS mode. Must be one of: ${Array.from(CORS_MODES).join(', ')}`)
-      }
-    }
 
-    this.#corsMode = value
-    if (old !== value) {
-      this.emit('update.corsMode', { old, new: value })
+      if (!CACHE_MODES.has(value)) {
+        throw new Error(`"${value}" is an unrecognized cache mode.Must be one of: ${Array.from(CACHE_MODES).join(', ')}.`)
+      } else {
+        this.#cache = value
+      }
+
+      if (value === 'only-if-cached' && this.#mode !== 'same-origin') {
+        this.mode = 'same-origin'
+        WARN('Request\'s CORS mode automatically set to "same-origin" for caching mode of "only-if-cached".')
+      }
+
+      this.emit('update.cache', { old, new: value })
+    }
+  }
+
+  get mode () {
+    return this.#mode
+  }
+
+  set mode (value) {
+    value = coalesceb(value)
+    if (value !== this.#mode) {
+      if (value !== null && typeof value !== 'string') {
+        throw new Error(`CORS mode must be cors, no-cors, or same-origin. "${value}" is invalid.`)
+      }
+
+      const old = this.#mode
+
+      if (value !== null && this.#cache !== 'only-if-cached') {
+        value = value.trim().toLowerCase()
+        if (!CORS_MODES.has(value)) {
+          throw new Error(`"${value} is an invalid CORS mode. Must be one of: ${Array.from(CORS_MODES).join(', ')}`)
+        }
+      }
+
+      this.#mode = value
+      this.emit('update.mode', { old, new: value })
     }
   }
 
@@ -452,26 +478,63 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
   }
 
   set referrerPolicy (value) {
-    const old = this.#referrerPolicy
+    if (this.#referrerPolicy !== value) {
+      const old = this.#referrerPolicy
 
-    if (coalesceb(value) === null) {
-      this.#referrerPolicy = null
-    } else {
-      if (value === null || value === undefined || typeof value !== 'string') {
-        throw new Error(`Referrer Policy mode must be no-referrer, no-referrer-when-downgrade, same-origin, origin, strict-origin, origin-when-cross-origin, strict-origin-when-cross-origin, unsafe-url, null, or an empty/blank string. "${value}" is invalid.`)
+      if (coalesceb(value) === null) {
+        this.#referrerPolicy = null
+      } else {
+        if (value === null || value === undefined || typeof value !== 'string') {
+          throw UnacceptableParameterTypeError(`Referrer policy "${value}" must be one of the following: ${Array.from(REFERRER_MODES).join(', ')}, null, or an empty string.`) // eslint-disable-line no-undef
+        }
+
+        value = value.trim().toLowerCase()
+
+        if (!REFERRER_MODES.has(value)) {
+          throw UnacceptableParameterTypeError(`Referrer policy "${value}" must be one of the following: ${Array.from(REFERRER_MODES).join(', ')}, null, or an empty string.`) // eslint-disable-line no-undef
+        }
+
+        this.#referrerPolicy = value
       }
 
-      value = value.trim().toLowerCase()
-
-      if (['no-referrer', 'no-referrer-when-downgrade', 'same-origin', 'origin', 'strict-origin', 'origin-when-cross-origin', 'strict-origin-when-cross-origin', 'unsafe-url'].indexOf(value) < 0) {
-        throw new Error(`"${value}" is an invalid referrer policy. Must be one of: no-referrer, no-referrer-when-downgrade, same-origin, origin, strict-origin, origin-when-cross-origin, strict-origin-when-cross-origin, unsafe-url, null, or an empty/blank string.`)
-      }
-
-      this.#referrerPolicy = value
-    }
-
-    if (old !== this.#referrerPolicy) {
       this.emit('update.referrerPolicy', { old, new: this.#referrerPolicy })
+    }
+  }
+
+  get credentials () { return this.#credentials }
+
+  set credentials (value) {
+    value = coalesce(value, '').trim().toLowerCase()
+    if (value !== this.#credentials) {
+      const old = this.#credentials
+
+      if (value.length === 0) {
+        this.emit('update.credentials', { old, new: null })
+        this.#credentials = null
+        return
+      }
+
+      if (!REQUEST_CREDENTIALS.has(value)) {
+        throw UnacceptableParameterTypeError(`"${value}" must be one of the following: ${Array.from(REQUEST_CREDENTIALS).join(', ')}`) // eslint-disable-line no-undef
+      }
+
+      this.#credentials = value
+      this.emit('update.credentials', { old, new: value })
+    }
+  }
+
+  get redirect () { return coalesceb(this.#redirect, 'follow') }
+
+  set redirect (value) {
+    value = coalesce(value, 'follow').toLowerCase()
+    if (value !== this.#redirect) {
+      if (!REDIRECT_MODES.has(value)) {
+        throw UnacceptableParameterTypeError(`Redirect value of "${value}" must be one of the following: ${Array.from(REDIRECT_MODES).join(', ')}`) // eslint-disable-line no-undef
+      }
+
+      const old = this.#redirect
+      this.#redirect = value
+      this.emit('update.redirect', { old, new: this.#redirect })
     }
   }
 
@@ -846,12 +909,15 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     // Create the request configuration
     const init = {
       method: this.method,
-      // CORS mode must be same-origin if the cache mode is "only-if-cached": https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
-      mode: this.#cacheMode === 'only-if-cached' ? 'same-origin' : this.#corsMode,
-      cache: this.#cacheMode,
-      redirect: 'follow',
+      cache: this.#cache,
+      redirect: this.redirect,
       referrer: coalesceb(this.referrer),
       referrerPolicy: this.#referrerPolicy
+    }
+
+    if (this.#cache === 'only-if-cached' || this.#mode !== null) {
+      // CORS mode must be same-origin if the cache mode is "only-if-cached": https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
+      init.mode = this.#cache === 'only-if-cached' ? 'same-origin' : this.#mode
     }
 
     // Apply Request Headers
@@ -916,6 +982,12 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
       url: this.url,
       method: this.#method,
       headers: Object.fromEntries(this.#headers.entries()),
+      mode: this.#mode,
+      credentials: this.#credentials,
+      redirect: this.#redirect,
+      cache: this.#cache,
+      referrer: this.referrer,
+      referrerPolicy: this.#referrerPolicy,
       query: this.query,
       body: this.#body,
       // username: this.#auth.username,
@@ -926,10 +998,6 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
       // proxyPassword: this.#proxyAuth[this.#proxyAuth.SECERT],
       // proxyAccessToken: this.#proxyAuth[this.#proxyAuth.SECERT_TOKEN],
       // proxyAccessTokenType: this.#proxyAuth.accessTokenType,
-      cacheMode: this.#cacheMode,
-      corsMode: this.#corsMode,
-      referrer: this.referrer,
-      referrerPolicy: this.#referrerPolicy,
       sri: this.sri,
       enforceMethodSafety: this.enforceMethodSafety,
       timeout: this.timeout
@@ -993,8 +1061,8 @@ function merge (a, b, override = true) {
   a.password = coalesceb(bb.password, aa.SECERT)
   a.accessToken = coalesceb(bb.accessToken, aa.accessToken)
   a.accessTokenType = coalesceb(bb.accessTokenType, aa.accessTokenType)
-  a.cacheMode = coalesceb(bb.cacheMode, aa.cacheMode)
-  a.corsMode = coalesceb(bb.corsMode, aa.corsMode)
+  a.cache = coalesceb(bb.cache, aa.cache)
+  a.mode = coalesceb(bb.mode, aa.mode)
   a.referrer = coalesceb(bb.referrer, aa.referrer)
   a.referrerPolicy = coalesceb(bb.referrerPolicy, aa.referrerPolicy)
   a.sri = coalesceb(bb.sri, aa.sri)

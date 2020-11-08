@@ -108,7 +108,7 @@ test('Resource', t => {
   t.ok(breq.headers.has('authorization'), 'Authorization header present for secure requests (token auth).')
   t.expect('Bearer 12345', breq.headers.get('authorization'), 'Authorization token correctly assigned to header.')
   t.expect('easy', req.query.nonce, 'Proper query parameter appended to URL.')
-  t.expect('no-cache', req.cacheMode, 'Nocache query parameter applied to request.')
+  t.expect('no-cache', req.cache, 'Nocache query parameter applied to request.')
   t.expect(2, req.queryParameterCount, 'Unique query parameter applied to request.')
 
   t.expect('test', req.headers.get('x-ngn-test'), 'Header reference retrieves correct headers.')
