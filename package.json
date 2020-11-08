@@ -1,6 +1,6 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha.5",
+  "version": "1.0.0-alpha.6",
   "description": "A network communications plugin for NGN.",
   "type": "module",
   "author": "Corey Butler\n",
@@ -24,10 +24,10 @@
     "@ngnjs/libdata": ">=1.0.0-alpha.1"
   },
   "devDependencies": {
-    "@author.io/dev": "^1.1.2",
+    "@author.io/dev": "^1.1.5",
+    "@ngnjs/net-debug": "^1.0.0-alpha",
     "@ngnjs/plugin": "^1.0.0-alpha",
-    "@ngnjs/plugin-debug": "^1.0.0-alpha",
-    "@ngnjs/net-debug": "^1.0.0-alpha"
+    "@ngnjs/plugin-debug": "^1.0.0-alpha"
   },
   "scripts": {
     "test": "npm run test:node && npm run test:deno && npm run test:browser && npm run report:syntax && npm run report:size",

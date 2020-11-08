@@ -70,7 +70,7 @@ test('HTTP Requests', async t => {
   res = await client.DELETE(url).catch(console.error)
   t.expect(200, res.status, 'DELETE sends and receives.')
 
-  let body = await client.JSON(url + '/test.json').catch(console.error)
+  let body = await client.JSON({ url: url + '/test.json', mode: 'no-cors' }).catch(console.error)
   t.expect('object', typeof body, 'JSON autoparses objects and returns the result.')
   t.expect('worked', body.result, 'Recognized JSON object values.')
 

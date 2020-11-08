@@ -296,10 +296,10 @@ export default class Resource extends Client {
       if (expiration <= 0) {
         this.emit('token.expired', { manually: false })
       } else {
-        this.emit('update.token', { expires: this.#accessTokenExpiration })
+        this.emit('token.update', { expires: this.#accessTokenExpiration })
         this.#accessTokenTimer = setTimeout(() => this.emit('token.expired', { manually: false }), expiration)
         if (this.#accessTokenRenewalDuration > 0) {
-          this.#accessTokenRenewalTimer = setTimeout(() => this.emit('token.pending.expiration', this), this.#accessTokenRenewalDuration)
+          this.#accessTokenRenewalTimer = setTimeout(() => this.emit('token.expiration.pending', this), this.#accessTokenRenewalDuration)
         }
       }
     }

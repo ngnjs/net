@@ -218,9 +218,11 @@ export default class HttpClient extends NGN.EventEmitter {
    * @method json
    * This is a shortcut method for creating a `GET` request and
    * auto-parsing the response into a JSON object.
-   * @param  {string} url
+   * @param  {string|object} url
    * The URL to issue the request to.
-   * @param  {Function} callback
+   * The configuration object accepts all of the NGN Request
+   * configuration options (except method, which is defined automatically).
+   * @param  {Function} [callback]
    * This receives a JSON response object from the server.
    * @param {Error} callback.error
    * If the request cannot be completed for any reason, this argument will be
@@ -231,7 +233,11 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   json (url, callback) {
-    const request = new NgnRequest(url)
+    if (typeof url === 'string') {
+      url = { url }
+    }
+
+    const request = new NgnRequest(this.parseRequestConfig(url, 'GET'))
 
     request.setHeader('Accept', 'application/json, application/ld+json, application/vnd.api+json, */json, */*json;q=0.8')
 

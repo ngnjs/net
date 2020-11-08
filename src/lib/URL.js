@@ -395,13 +395,13 @@ export default class Address extends NGN.EventEmitter {
    * 1. Hash
    * @param {boolean} [cfg.protocol=true]
    * Generate the protocol/scheme (i.e. `http://`)
-   * @param { boolean } [cfg.hostname = true]
+   * @param {boolean} [cfg.hostname = true]
    * Generate the hostname.
-   * @param { boolean } [cfg.username = false]
+   * @param {boolean} [cfg.username = false]
    * Generate the username. Example: `https://username@hostname.com`.
    * Setting this to `true` will force the hostname to also be generated,
    * (even if hostname is set to `false`).
-   * @param { boolean} [cfg.password = false]
+   * @param {boolean} [cfg.password = false]
    * Generate the password. Example: `https://username:pasword@domain.com`.
    * This requires the `username` option to be `true`, and it will only be generated
    * if a username exists.
@@ -421,7 +421,7 @@ export default class Address extends NGN.EventEmitter {
    * especially when there are many boolean query parameters in the URL.
    * @param {boolean} [cfg.hash=true]
    * Generate the hash value.
-   * @param { string } [cfg.queryMode]
+   * @param {string} [cfg.queryMode]
    * Override the default #queryMode ('boolean' by default).
    * @warning Displaying the password in plain text is a security vulnerability.
    */
