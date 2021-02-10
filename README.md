@@ -20,8 +20,8 @@ The HTTP client provides an intuitive way to execute HTTP requests. All major HT
 
 ```javascript
 // Browser/Deno Runtime
-import NGN from 'https://cdn.skypack.dev/ngn'
-import { Client } from 'https://cdn.skypack.dev/@ngnjs/net'
+import NGN from 'https://cdn.jsdelivr.net/npm/ngn'
+import { Client } from 'https://cdn.jsdelivr.net/npm/@ngnjs/net'
 // Node Runtime
 // import NGN from 'ngn'
 // import { Client } from '@ngnjs/ngn'
@@ -139,6 +139,30 @@ console.log(myUrl.formatString('{{username}} accessing {{path}}'))
 ## Additional Features
 
 The Client, Resource, and URL classes all implement an `NGN.EventEmitter`. This means they'll fire change events.
+
+## Additional Installation Options
+
+The CDN is the simplest way to use the library:
+
+```javascript
+import * as NET from 'https://cdn.jsdelivr.net/npm/@ngnjs/net'
+```
+
+**Copy/Paste**
+
+It may be tempting to copy/paste the source code from the CDN into a file in your local environment. This file alone is not the complete network library. There are two other submodules, which are loaded dynamically. The first is a fetch shim. This shim helps map runtime functions to the fetch API. The second is a Node.js submodule, which is only loaded in Node environments to polyfill fetch (which Node does not have).
+
+The library only attempts to load submodules when needed. If the submodules are not available, errors like this one may appear:
+
+![NGN.NET Errors](https://files.slack.com/files-pri/T4482TE9G-F01MGLR5CKX/screen_shot_2021-02-09_at_3.08.05_pm.png)
+
+All of the submodules are available at [JSDelivr.com (@ngnjs/net)](https://www.jsdelivr.com/package/npm/@ngnjs/net).
+
+
+**Serving Locally**
+
+Install the npm module using `npm install @ngnjs/net` and optionally `npm install @ngnjs/net-debug` (for sourcemaps).
+
 
 ## Known Issues
 

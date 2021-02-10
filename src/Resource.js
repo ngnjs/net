@@ -279,6 +279,14 @@ export default class Resource extends Client {
     return this.#request.href
   }
 
+  set baseUrl (value) {
+    const old = this.#baseUrl
+    const uri = new Address(value)
+    this.#baseUrl = uri
+
+    WARN(`The ${this.name} HTTP resource base URL changed from "${old.toString()}" to "${uri.toString()}"`)
+  }
+
   get username () {
     return this.#request.username
   }

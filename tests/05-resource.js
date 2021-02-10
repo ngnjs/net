@@ -189,6 +189,11 @@ test('Resource Routes', async t => {
   res = await v4.GET('/test/path').catch(console.error)
   t.expect(200, res.status, 'Modified credentials accepted.')
 
+  const altBase = 'https://alt.domain.com'
+  API.baseUrl = altBase
+  t.expect(altBase + '/v1', v1.baseUrl, 'Route is appended to updated base URL')
+  t.expect(altBase + '/v2', v2.baseUrl, 'Alternate route is appended to updated base URL')
+
   t.end()
 })
 
