@@ -68,6 +68,10 @@ function cleanResponse (res, status, responseText = '', statusText = '') {
     r.redirected = res.redirected
   }
 
+  if (res.request) {
+    r.request = res.request
+  }
+
   return r
 }
 
@@ -150,6 +154,10 @@ export default function Fetch (resource, init = {}) {
         if (init.method === 'HEAD') {
           res.responseText = ''
         }
+
+        res.request = Object.assign({}, init, {
+          url: resource.href
+        })
 
         const r = cache.put(req, cleanResponse(res))
 

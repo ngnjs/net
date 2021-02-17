@@ -37,7 +37,7 @@ test('Sanity Check', t => {
   t.end()
 })
 
-test('HTTP Requests', async t => {
+test.only('HTTP Requests', async t => {
   const client = new Client()
   let res
 
@@ -60,6 +60,7 @@ test('HTTP Requests', async t => {
 
   res = await client.GET(url).catch(console.error)
   t.expect(200, res.status, 'GET sends and receives.')
+  t.expect(true, res.hasOwnProperty('request'), 'Contains the original request')
 
   res = await client.POST(url).catch(console.error)
   t.expect(200, res.status, 'POST sends and receives.')

@@ -21,7 +21,10 @@ export default function Fetch (resource, init = {}) {
           url: r.url
         }, {
           body: init.body,
-          responseText: ''
+          responseText: '',
+          request: Object.assign({}, init, {
+            url: resource.href
+          })
         })
 
         let body = ''
