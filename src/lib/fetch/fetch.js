@@ -21,8 +21,14 @@ export default function Fetch (resource, init = {}) {
           url: r.url
         }, {
           body: init.body,
-          responseText: '',
-          request: Object.assign({}, init, {
+          responseText: ''
+        })
+
+        Object.defineProperty(result, 'request', {
+          enumerable: false,
+          configurable: false,
+          writable: false,
+          value: Object.assign({}, init, {
             url: resource.href
           })
         })

@@ -37,7 +37,7 @@ test('Sanity Check', t => {
   t.end()
 })
 
-test.only('HTTP Requests', async t => {
+test('HTTP Requests', async t => {
   const client = new Client()
   let res
 

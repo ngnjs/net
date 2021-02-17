@@ -69,7 +69,12 @@ function cleanResponse (res, status, responseText = '', statusText = '') {
   }
 
   if (res.request) {
-    r.request = res.request
+    Object.defineProperty(r, 'request', {
+      enumerable: false,
+      configurable: false,
+      writable: false,
+      value: res.request
+    })
   }
 
   return r
