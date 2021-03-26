@@ -2,39 +2,34 @@ import Reference from '@ngnjs/plugin'
 import { coalesce, coalesceb } from '@ngnjs/libdata'
 import { cacheStatusCodes, HTTP_REDIRECT, REDIRECTS } from './constants.js'
 import { HOSTNAME, URL_PATTERN } from '../constants.js'
+import http from 'http'
+import https from 'https'
 
 const NGN = new Reference().requires('runtime', 'WARN', 'hidden')
 
 // Stubs for Node
 let POLYFILLED = false
 let hostname = HOSTNAME
-let http
-let https
 let cache = { get: () => undefined, put: (req, res) => res, capture () { } }
 let SRI = { verify: () => false } // subresource identity support
 function ReferrerPolicy (policy) { this.policy = policy }
 ReferrerPolicy.prototype.referrerURL = uri => uri
 
 // Apply libnet-node plugin, if available, to override stubs
-if (NGN.runtime === 'node') {
-  ; (async () => {
-    http = await import('http').catch(console.error)
-    https = await import('https').catch(console.error)
+; (async () => {
+  // Do not abort if the Node library is inaccessible.
+  try {
+    const polyfills = await import('@ngnjs/libnet-node')
 
-    // Do not abort if the Node library is inaccessible.
-    try {
-      const polyfills = await import('@ngnjs/libnet-node')
-
-      SRI = polyfills.SRI
-      ReferrerPolicy = polyfills.ReferrerPolicy // eslint-disable-line no-func-assign
-      cache = new polyfills.Cache(coalesce(process.env.HTTP_CACHE_DIR, 'memory'))
-      hostname = polyfills.HOSTNAME
-      POLYFILLED = true
-    } catch (e) {
-      NGN.WARN('fetch', e)
-    }
-  })()
-}
+    SRI = polyfills.SRI
+    ReferrerPolicy = polyfills.ReferrerPolicy // eslint-disable-line no-func-assign
+    cache = new polyfills.Cache(coalesce(process.env.HTTP_CACHE_DIR, 'memory'))
+    hostname = polyfills.HOSTNAME
+    POLYFILLED = true
+  } catch (e) {
+    NGN.WARN('fetch', e)
+  }
+})()
 
 // export default function Fetch (resource, init) {
 //   return new Promise(resolve => resolve())
@@ -171,7 +166,7 @@ export default function Fetch (resource, init = {}) {
     })
 
     // Apply the abort manager to the request
-    if (signal) {
+    if (signal && typeof signal === 'function') {
       signal(req)
     }
 
@@ -190,7 +185,11 @@ export default function Fetch (resource, init = {}) {
       // Check the cache first in Node environments
       const cached = cache.get(req, init.cache)
       if (cached) {
-        req.abort() // Prevents orphan request from existing (orphans cause the process to hang)
+        if (typeof req.destroy === 'function') {
+          req.destroy()
+        } else if (typeof req.abort === 'function') {
+          req.abort() // Prevents orphan request from existing (orphans cause the process to hang)
+        }
         return resolve(cached.response)
       }
 
