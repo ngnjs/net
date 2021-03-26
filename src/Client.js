@@ -30,7 +30,7 @@ export default class HttpClient extends NGN.EventEmitter {
        */
       normalizeUrl: NGN.hiddenconstant(url => (new Address(url)).toString({ username: true, password: true, urlencode: false })),
 
-      parseRequestConfig: NGN.hiddenconstant((cfg = {}, method = 'GET') => {
+      parseRequestConfig: NGN.hiddenconstant((method = 'GET', cfg = {}) => {
         cfg = typeof cfg === 'string' ? { url: cfg } : cfg
         cfg.method = method
         cfg.url = coalesceb(cfg.url, HOSTNAME)
@@ -40,7 +40,7 @@ export default class HttpClient extends NGN.EventEmitter {
       send: NGN.hiddenconstant((method, argv) => {
         const args = argv ? Array.from(argv) : []
         const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null
-        const request = new NgnRequest(this.parseRequestConfig(...args, method.toUpperCase()))
+        const request = new NgnRequest(this.parseRequestConfig(method.toUpperCase(), ...args))
 
         // This is a no-op by default, unless the preflight method
         // is overridden by an extension class.
@@ -237,7 +237,7 @@ export default class HttpClient extends NGN.EventEmitter {
       url = { url }
     }
 
-    const request = new NgnRequest(this.parseRequestConfig(url, 'GET'))
+    const request = new NgnRequest(this.parseRequestConfig('GET', url))
 
     request.setHeader('Accept', 'application/json, application/ld+json, application/vnd.api+json, */json, */*json;q=0.8')
 
