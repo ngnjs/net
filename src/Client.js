@@ -158,7 +158,7 @@ export default class HttpClient extends NGN.EventEmitter {
   post () {
     let args = Array.from(arguments)
     if (args.length > 1 && typeof args[0] === 'string' && typeof args[1] === 'object') {
-      args = [Object.assign({ url: args[0] }, args.slice(1))]
+      args = [Object.assign({ url: args[0] }, args[1])]
     }
     return this.send('POST', args)
   }
@@ -179,7 +179,7 @@ export default class HttpClient extends NGN.EventEmitter {
   put () {
     let args = Array.from(arguments)
     if (args.length > 1 && typeof args[0] === 'string' && typeof args[1] === 'object') {
-      args = [Object.assign({ url: args[0] }, args.slice(1))]
+      args = [Object.assign({ url: args[0] }, args[1])]
     }
     return this.send('PUT', args)
   }
