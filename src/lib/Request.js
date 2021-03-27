@@ -310,6 +310,8 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
                     this.setHeader('Content-Type', 'text/html')
                   }
                 }
+              } else {
+                this.setHeader('Content-Type', 'text/plain')
               }
 
               this.setHeader('Content-Length', this.#body.length)
@@ -926,7 +928,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     }
 
     // Apply request body (if applicable)
-    if (this.#body !== null && REQUEST_NOBODY_METHODS.has(init.method)) {
+    if (this.#body !== null && !REQUEST_NOBODY_METHODS.has(init.method)) {
       init.body = this.#body
     }
 

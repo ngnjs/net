@@ -30,7 +30,7 @@ export default class HttpClient extends NGN.EventEmitter {
        */
       normalizeUrl: NGN.hiddenconstant(url => (new Address(url)).toString({ username: true, password: true, urlencode: false })),
 
-      parseRequestConfig: NGN.hiddenconstant((method = 'GET', cfg = {}) => {
+      parseRequestConfig: NGN.hiddenconstant((cfg = {}, method = 'GET') => {
         cfg = typeof cfg === 'string' ? { url: cfg } : cfg
         cfg.method = method
         cfg.url = coalesceb(cfg.url, HOSTNAME)
@@ -40,7 +40,7 @@ export default class HttpClient extends NGN.EventEmitter {
       send: NGN.hiddenconstant((method, argv) => {
         const args = argv ? Array.from(argv) : []
         const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null
-        const request = new NgnRequest(this.parseRequestConfig(method.toUpperCase(), ...args))
+        const request = new NgnRequest(this.parseRequestConfig(...args, method.toUpperCase()))
 
         // This is a no-op by default, unless the preflight method
         // is overridden by an extension class.
@@ -156,7 +156,11 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   post () {
-    return this.send('POST', arguments)
+    let args = Array.from(arguments)
+    if (args.length > 1 && typeof args[0] === 'string' && typeof args[1] === 'object') {
+      args = [Object.assign({ url: args[0] }, args.slice(1))]
+    }
+    return this.send('POST', args)
   }
 
   /**
@@ -173,7 +177,11 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   put () {
-    return this.send('PUT', arguments)
+    let args = Array.from(arguments)
+    if (args.length > 1 && typeof args[0] === 'string' && typeof args[1] === 'object') {
+      args = [Object.assign({ url: args[0] }, args.slice(1))]
+    }
+    return this.send('PUT', args)
   }
 
   /**
@@ -237,7 +245,7 @@ export default class HttpClient extends NGN.EventEmitter {
       url = { url }
     }
 
-    const request = new NgnRequest(this.parseRequestConfig('GET', url))
+    const request = new NgnRequest(this.parseRequestConfig(url, 'GET'))
 
     request.setHeader('Accept', 'application/json, application/ld+json, application/vnd.api+json, */json, */*json;q=0.8')
 
