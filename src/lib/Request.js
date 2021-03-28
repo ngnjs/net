@@ -705,8 +705,8 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
   set body (value) {
     const old = this.#body
     this.#body = value
-    this.prepareBody()
     if (old !== this.#body) {
+      this.prepareBody()
       this.emit('update.body', { old, new: this.body })
     }
   }

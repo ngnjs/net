@@ -1,6 +1,6 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha.14",
+  "version": "1.0.0-alpha.15",
   "description": "A network communications plugin for NGN.",
   "type": "module",
   "author": "Corey Butler\n",
