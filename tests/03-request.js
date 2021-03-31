@@ -111,7 +111,7 @@ test('NGN HTTP Request Configuration', t => {
   t.expect('text/html', request.getHeader('content-type'), 'Correctly identified HTML body type.')
 
   request.body = 'Basic text body.'
-  t.expect('text/plain', request.getHeader('content-type'), 'Correctly identified HTML body type.')
+  t.expect('text/plain', request.getHeader('content-type'), 'Correctly identified plain text body type.')
 
 //   request = new Request({
 //     url: uri.get,

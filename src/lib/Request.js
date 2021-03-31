@@ -112,7 +112,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
      * following syntax:
      *
      * ```json
-     * {
+     * body: {
      *   form: {
      *     form_field_1: "value",
      *     form_field_2: "value",
@@ -276,6 +276,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
                 }
 
                 this.#body = dataString.join('&')
+                this.setHeader('Content-Type', 'application/x-www-form-urlencoded')
               } else {
                 this.#body = JSON.stringify(this.#body).trim()
                 this.setHeader('Content-Length', this.#body.length)
@@ -293,7 +294,9 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
                 if (match !== null && this.#body.trim().substr(0, 5).toLowerCase() !== 'data:' && this.#body.trim().substr(0, 1).toLowerCase() !== '<') {
                   this.setHeader('Content-Type', 'application/x-www-form-urlencoded')
                 } else {
-                  this.setHeader('Content-Type', 'text/plain')
+                  if (contentType === null) {
+                    this.setHeader('Content-Type', 'text/plain')
+                  }
 
                   if (this.#body.trim().substr(0, 5).toLowerCase() === 'data:') {
                     // Crude Data URL mimetype detection
@@ -310,7 +313,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
                     this.setHeader('Content-Type', 'text/html')
                   }
                 }
-              } else {
+              } else if (contentType === null) {
                 this.setHeader('Content-Type', 'text/plain')
               }
 
@@ -703,9 +706,15 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
   }
 
   set body (value) {
-    const old = this.#body
-    this.#body = value
-    if (old !== this.#body) {
+    if (this.#body !== value) {
+      if (value && typeof value === 'string') {
+        this.setHeader('content-type', 'text/plain')
+      } else {
+        this.removeHeader('content-type')
+      }
+
+      const old = this.#body
+      this.#body = value
       this.prepareBody()
       this.emit('update.body', { old, new: this.body })
     }
