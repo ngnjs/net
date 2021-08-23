@@ -1,4 +1,5 @@
 <h1 align="center">NGN Network<br/><img src="https://img.shields.io/npm/v/@ngnjs/net?label=%40ngnjs/net&logo=npm&style=social"/></h1>
+<div align="center"><em>A plugin for <a href="https://github.com/ngnjs/ngn">NGN</a></em></div><br/>
 
 Live examples on [codepen](https://codepen.io/coreybutler/pen/WNwLOxa).
 
