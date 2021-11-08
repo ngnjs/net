@@ -1,5 +1,6 @@
 import { coalesceb } from '@ngnjs/libdata'
 import Reference from '@ngnjs/plugin'
+import { BTOA } from './constants.js'
 
 const NGN = new Reference()
 
@@ -57,11 +58,9 @@ export default class Credential extends NGN.EventEmitter {
         // Binary to base64-ascii conversions
         if (NGN.runtime === 'node') {
           return `Basic ${Buffer.from(`${user}:${secret}`, 'binary').toString('base64')}`
-        } else if (globalThis.btoa !== undefined) {
-          return 'Basic ' + globalThis.btoa(`${user}:${secret}`)
         }
 
-        return ''
+        return 'Basic ' + BTOA(`${user}:${secret}`)
       })
     })
 

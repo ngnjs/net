@@ -64,9 +64,11 @@ export default function Fetch (resource, init = {}) {
         const hiddenBody = result.body
         const hiddenSource = result._bodySource
         const hiddenStream = result._stream
+
         delete result.body
         delete result._bodySource
         delete result._stream
+
         Object.defineProperties(result, {
           body: { get: () => hiddenBody || result.responseText },
           _bodySource: { get: () => hiddenSource },

@@ -38,6 +38,10 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
   #auth
   #proxyAuth
   #rawURL
+  #signKey
+  #verifyKey
+  #encryptKey
+  #decryptKey
 
   constructor (cfg = {}) {
     super()
@@ -397,6 +401,11 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     this.#auth.reference = this
     this.#proxyAuth.reference = this
 
+    this.#signKey = coalesceb(cfg.signingKey)
+    this.#verifyKey = coalesceb(cfg.verificationKey)
+    this.#encryptKey = coalesceb(cfg.encryptionKey, cfg.encryptKey)
+    this.#decryptKey = coalesceb(cfg.decryptionKey, cfg.decryptKey)
+
     // if (cfg.maxRedirects) {
     //   this.maxRedirects = cfg.maxRedirects
     // }
@@ -404,6 +413,60 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     this.method = coalesceb(cfg.method, 'GET')
 
     this.prepareBody()
+  }
+
+  /**
+   * @cfgproperty {string} signingKey
+   * The private key used to sign requests. This can
+   * be an RSA or ECDSA key in PEM format.
+   */
+  get signingKey () {
+    return this.#signKey
+  }
+
+  set signingKey (value) {
+    this.#signKey = value
+  }
+
+  /**
+   * @cfgproperty {string} verificationKey
+   * he public key used to verify requests. This can
+   * be an RSA or ECDSA key in PEM format.
+   */
+  get verificationKey () {
+    return this.#verifyKey
+  }
+
+  set verificationKey (value) {
+    this.#verifyKey = value
+  }
+
+  /**
+   * @cfgproperty {string} encryptionKey
+   * The encryption key is a shared key (string) or private key (PEM) used
+   * to encrypt the body of a request. RSA and ECDSA keys are supported.
+   */
+  get encryptionKey () {
+    return this.#encryptKey
+  }
+
+  set encryptionKey (value) {
+    this.#encryptKey = value
+  }
+
+  /**
+   * @cfgproperty {string} decryptionKey
+   * The decryption key is a shared key (string) or public key (PEM) used
+   * to decrypt the body of a request. RSA and ECDSA keys are supported.
+   * If decryption is requested and no decryption key is specified, the
+   * encryption key will be used (assumes shared key).
+   */
+  get decryptionKey () {
+    return this.#decryptKey
+  }
+
+  set decryptionKey (value) {
+    this.#decryptKey = value
   }
 
   /**
@@ -907,7 +970,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
    * @return {Promise}
    * If no callback is specified, a promise is returned.
    */
-  send (callback) {
+  async send (callback) {
     let body = this.body
 
     // Disable body when safe methods (idempotent) are enforced.
@@ -931,14 +994,28 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
       init.mode = this.#cache === 'only-if-cached' ? 'same-origin' : this.#mode
     }
 
+    const crypto = (NGN.crypto || [null])[0]
+    if ((this.#encryptKey || this.#decryptKey || this.#signKey || this.#verifyKey) && !crypto) {
+      throw new Error('cryptography is unavailable (hint: is the crypto plugin loaded?)')
+    }
+
+    // Apply encryption (if applicable)
+    if (body !== null && this.#encryptKey) {
+      body = await crypto.encrypt(body, this.#encryptKey)
+      this.setHeader('content-type', 'application/octet-stream; charset=UTF-8')
+      this.setHeader('content-transfer-encoding', 'base64', false)
+      this.appendHeader('content-encoding', crypto.encryptionAlgorithm(this.#encryptKey))
+      this.setHeader('content-length', body.length)
+    }
+
+    // Apply signature (if applicable)
+    if (body !== null && this.#signKey) {
+      this.setHeader('signature', await crypto.sign(body, this.#signKey))
+    }
+
     // Apply Request Headers
     if (this.#headers.size > 0) {
       init.headers = this.#headers.toObject()
-    }
-
-    // Apply request body (if applicable)
-    if (this.#body !== null && !REQUEST_NOBODY_METHODS.has(init.method)) {
-      init.body = this.#body
     }
 
     // Apply timer
@@ -975,11 +1052,42 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
       init.integrity = coalesce(this.sri, this.integrity)
     }
 
+    // Apply request body (if applicable)
+    if (body !== null && !REQUEST_NOBODY_METHODS.has(init.method)) {
+      init.body = body
+    }
+
     // Send the request
-    const res = Fetch(this.#uri, init, this)
+    const res = await Fetch(this.#uri, init, this).catch(callback)
+
+    // Post-process response body when applicable
+    if (coalesceb(res.body) !== null) {
+      // Verify response (if applicable)
+      const signature = res.headers.get('signature')
+      if (this.#verifyKey && signature) {
+        if (!crypto.verify(res.body, signature, this.#verifyKey)) {
+          throw new Error(`Could not validate response (signature: ${signature})`)
+        }
+      }
+
+      // Decrypt response (if applicable)
+      const decryptKey = coalesceb(this.#decryptKey, this.#encryptKey)
+      if (decryptKey) {
+        try {
+          res.body = crypto.decrypt(decryptKey, res.body)
+
+          // Replace original JSON getter with one that uses decrypted value
+          delete res.JSON
+          Object.defineProperty(res, 'JSON', {
+            enumerable: true,
+            get () { try { return typeof res.body === 'object' ? res.body : JSON.parse(res.body) } catch (e) { return null } }
+          })
+        } catch (e) {}
+      }
+    }
 
     if (callback) {
-      res.then(r => callback(null, r)).catch(callback)
+      callback(null, res)
     }
 
     return res
@@ -1009,6 +1117,10 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
       // proxyPassword: this.#proxyAuth[this.#proxyAuth.SECERT],
       // proxyAccessToken: this.#proxyAuth[this.#proxyAuth.SECERT_TOKEN],
       // proxyAccessTokenType: this.#proxyAuth.accessTokenType,
+      signingKey: this.signingKey,
+      verificationKey: this.verificationKey,
+      encryptionKey: this.encryptionKey,
+      decryptionKey: this.decryptionKey,
       sri: this.sri,
       enforceMethodSafety: this.enforceMethodSafety,
       timeout: this.timeout
@@ -1079,6 +1191,10 @@ function merge (a, b, override = true) {
   a.sri = coalesceb(bb.sri, aa.sri)
   a.enforceMethodSafety = coalesceb(bb.enforceMethodSafety, aa.enforceMethodSafety)
   a.timeout = coalesceb(bb.timeout, aa.timeout)
+  a.signingKey = coalesceb(bb.signingKey, aa.signingKey)
+  a.verificationKey = coalesceb(bb.verificationKey, aa.verificationKey)
+  a.encryptionKey = coalesceb(bb.encryptionKey, aa.encryptionKey)
+  a.decryptionKey = coalesceb(bb.decryptionKey, aa.decryptionKey)
 
   for (const [name, value] of b.headers.entries()) {
     a.setHeader(name, value, override)

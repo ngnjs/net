@@ -60,6 +60,10 @@ export const URI_PATTERN = /^(([^:/?#]+):)?(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(
 export const URL_PATTERN = /^(([^:/?#]+):)(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?/
 export const URL_RELATIVE_PATTERN = /^\.{1,2}\//gi
 
+// Polyfill btoa when it does not exist (Node)
+// Binary to base64-ascii conversions
+export const BTOA = globalThis.btoa || function (v) { return Buffer.from(v, 'binary').toString('base64') }
+
 let HOSTNAME = globalThis.location ? globalThis.location.host : 'localhost'
 const interfaces = new Set([
   '127.0.0.1',

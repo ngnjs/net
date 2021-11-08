@@ -3,10 +3,12 @@ import Client from './Client.js'
 import Address from './lib/URL.js'
 import Request from './lib/Request.js'
 import { HOSTNAME, HTTP_METHODS, REDIRECT_MODES } from './lib/constants.js'
-import { coalesce, coalesceb } from '@ngnjs/libdata'
+import { coalesce, coalesceb, forceBoolean } from '@ngnjs/libdata'
 
 const NGN = new Reference().requires('WARN')
 const { WARN } = NGN
+
+const bool = v => v === null ? null : forceBoolean(v)
 
 /**
  * @class Resource
@@ -81,6 +83,14 @@ export default class Resource extends Client {
   #redirect
   #referrer
   #referrerPolicy
+  #signKey
+  #verifyKey
+  #encryptKey
+  #decryptKey
+  #encryptAll
+  #decryptAll
+  #signAll
+  #verifyAll
 
   constructor (cfg = {}) {
     super()
@@ -263,6 +273,38 @@ export default class Resource extends Client {
      */
     this.#accessTokenRenewalDuration = Math.floor(coalesce(cfg.tokenRenewalNotice, cfg.tokenrenewalNotice, cfg.tokenRenewalnotice, cfg.tokenrenewalnotice, 0))
 
+    // Crypto keys
+    this.#signKey = bool(coalesceb(cfg.signingKey))
+    this.#verifyKey = bool(coalesceb(cfg.verificationKey))
+    this.#encryptKey = bool(coalesceb(cfg.encryptionKey, cfg.encryptKey))
+    this.#decryptKey = bool(coalesceb(cfg.decryptionKey, cfg.decryptKey))
+
+    /**
+     * @cfg {boolean} [encryptAll]
+     * Automatically attempt to encrypt all request bodies.
+     */
+    this.#encryptAll = bool(coalesceb(cfg.encryptAll, cfg.encryptall))
+
+    /**
+     * @cfg {boolean} [decryptAll]
+     * Automatically attempt to decrypt all response bodies.
+     */
+    this.#decryptAll = bool(coalesceb(cfg.decryptAll, cfg.decryptall))
+
+    /**
+     * @cfg {boolean} [signAll]
+     * Automatically sign all request bodies.
+     */
+    this.#signAll = bool(coalesceb(cfg.signAll, cfg.signall))
+
+    /**
+     * @cfg {boolean} [verifyAll]
+     * Automatically attempt to verify all response bodies.
+     * Throws an error if the body cannot be verified with
+     * the value found in the HTTP response `signature` header.
+     */
+    this.#verifyAll = bool(coalesceb(cfg.verifyAll, cfg.verifyall))
+
     this.on('token.expired', () => {
       clearTimeout(this.#accessTokenTimer)
       clearTimeout(this.#accessTokenRenewalTimer)
@@ -273,6 +315,96 @@ export default class Resource extends Client {
     this.#request.relay('*', this)
 
     this.register('HttpResource', this)
+  }
+
+  /**
+   * @property {boolean} encryptAll
+   * Auto-encrypt all requests by default.
+   * @writeonly
+   */
+  set encryptAll (value) {
+    this.#encryptAll = bool(value)
+  }
+
+  /**
+   * @property {boolean} decryptAll
+   * Auto-decrypt all responses by default.
+   * @writeonly
+   */
+  set decryptAll (value) {
+    this.#decryptAll = bool(value)
+  }
+
+  /**
+   * @property {boolean} signAll
+   * Auto-sign all request bodies by default.
+   * @writeonly
+   */
+  set signAll (value) {
+    this.#signAll = bool(value)
+  }
+
+  /**
+   * @property {boolean} verifyAll
+   * Auto-verify all response bodies by default.
+   * @writeonly
+   */
+  set verifyAll (value) {
+    this.#verifyAll = bool(value)
+  }
+
+  /**
+   * @cfgproperty {string} signingKey
+   * The private key used to sign requests. This can
+   * be an RSA or ECDSA key in PEM format.
+   */
+  get signingKey () {
+    return this.#signKey
+  }
+
+  set signingKey (value) {
+    this.#signKey = bool(value)
+  }
+
+  /**
+   * @cfgproperty {string} verificationKey
+   * he public key used to verify requests. This can
+   * be an RSA or ECDSA key in PEM format.
+   */
+  get verificationKey () {
+    return this.#verifyKey
+  }
+
+  set verificationKey (value) {
+    this.#verifyKey = bool(value)
+  }
+
+  /**
+   * @cfgproperty {string} encryptionKey
+   * The encryption key is a shared key (string) or private key (PEM) used
+   * to encrypt the body of a request. RSA and ECDSA keys are supported.
+   */
+  get encryptionKey () {
+    return this.#encryptKey
+  }
+
+  set encryptionKey (value) {
+    this.#encryptKey = bool(value)
+  }
+
+  /**
+   * @cfgproperty {string} decryptionKey
+   * The decryption key is a shared key (string) or public key (PEM) used
+   * to decrypt the body of a request. RSA and ECDSA keys are supported.
+   * If decryption is requested and no decryption key is specified, the
+   * encryption key will be used (assumes shared key).
+   */
+  get decryptionKey () {
+    return this.#decryptKey
+  }
+
+  set decryptionKey (value) {
+    this.#decryptKey = bool(value)
   }
 
   get baseUrl () {
@@ -545,7 +677,46 @@ export default class Resource extends Client {
    * The request object.
    * @private
    */
-  preflight (req) {
+  cryptokey (seed, update, allow = true) {
+    if (!coalesceb(allow, true)) {
+      return null
+    }
+
+    const key = coalesceb(...seed)
+    if (update || key) {
+      return coalesce(key, update)
+    }
+  }
+
+  preflight (req, cfg) {
+    // Support automatic request body encryption
+    req.encryptionKey = this.cryptokey(
+      [cfg.encryptionKey, cfg.encryptKey],
+      this.#encryptKey,
+      coalesce(cfg.encrypt, this.#encryptAll)
+    )
+
+    // Support automatic response body decryption
+    req.decryptionKey = this.cryptokey(
+      [cfg.decryptionKey, cfg.decryptKey],
+      coalesceb(this.#decryptKey, this.#encryptKey),
+      coalesce(cfg.decrypt, this.#decryptKey)
+    )
+
+    // Support automatic request body signing
+    req.signingKey = this.cryptokey(
+      [cfg.signingKey, cfg.signKey],
+      this.#signKey,
+      coalesce(cfg.sign, this.#signAll)
+    )
+
+    // Support automatic response body verification
+    req.verificationKey = this.cryptokey(
+      [cfg.verificationKey, cfg.verifyKey],
+      this.#verifyKey,
+      coalesce(cfg.verify, this.#verifyAll)
+    )
+
     req.url = this.prepareUrl(req.configuredURL)
     req.assign(this.#request, false)
 

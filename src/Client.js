@@ -6,6 +6,17 @@ import { coalesceb } from '@ngnjs/libdata'
 
 const NGN = new Reference().requires('EventEmitter', 'WARN')
 const { WARN } = NGN
+export const HTTP_METHODS = new Set([
+  'OPTIONS',
+  'HEAD',
+  'GET',
+  'POST',
+  'PUT',
+  'DELETE',
+  'TRACE',
+  'JSON',
+  'JSONP'
+])
 
 /**
  * @class HttpClient
@@ -19,6 +30,8 @@ export default class HttpClient extends NGN.EventEmitter {
     this.name = 'HTTP Client'
 
     Object.defineProperties(this, {
+      httpmethods: NGN.hiddenconstant(HTTP_METHODS),
+
       /**
        * @method normalizeUrl
        * Normalize a URL by removing extraneous characters,
@@ -34,32 +47,26 @@ export default class HttpClient extends NGN.EventEmitter {
         cfg = typeof cfg === 'string' ? { url: cfg } : cfg
         cfg.method = method
         cfg.url = coalesceb(cfg.url, HOSTNAME)
+
         return cfg
       }),
 
       send: NGN.hiddenconstant((method, argv) => {
         const args = argv ? Array.from(argv) : []
         const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null
-        const request = new NgnRequest(this.parseRequestConfig(...args, method.toUpperCase()))
+        const cfg = this.parseRequestConfig(...args, method.toUpperCase())
+        const request = new NgnRequest(cfg)
 
         // This is a no-op by default, unless the preflight method
         // is overridden by an extension class.
-        this.preflight(request)
+        this.preflight(request, cfg)
 
         return request.send(callback)
       })
     })
 
     // Helper aliases (undocumented)
-    this.alias('OPTIONS', this.options)
-    this.alias('HEAD', this.head)
-    this.alias('GET', this.get)
-    this.alias('POST', this.post)
-    this.alias('PUT', this.put)
-    this.alias('DELETE', this.delete)
-    this.alias('TRACE', this.trace)
-    this.alias('JSON', this.json)
-    this.alias('JSONP', this.jsonp)
+    HTTP_METHODS.forEach(m => this.alias(m, this[m.toLowerCase()]))
 
     this.register('HttpClient', this)
   }
@@ -98,7 +105,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to, or a configuration object.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -115,7 +122,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to, or a configuration object.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -132,7 +139,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -149,7 +156,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -170,7 +177,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -191,7 +198,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -211,7 +218,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
-   * @param {Function} callback
+   * @param {Function} [callback]
    * A callback method to run when the request is complete.
    * This receives the response object as the only argument.
    * @returns {Promise}
@@ -334,5 +341,97 @@ export default class HttpClient extends NGN.EventEmitter {
    * @param {Request} request
    * The request to process.
    */
-  preflight (request) { }
+  preflight (request, configuration) { }
 }
+
+// #encodingproxy = null
+//   #cryptoproxy = (key, value, ignoredMethods = []) => {
+//   if (this.#encodingproxy === null) {
+//     this.#encodingproxy = new Proxy(this, {
+//       get(target, prop) {
+//         const property = prop.trim().toUpperCase()
+//         if (!HTTP_METHODS.has(property)) {
+//           return target[prop]
+//         }
+
+//         // Pass OPTIONS and HEAD requests through unchanged
+//         if (property === 'OPTIONS' || property === 'HEAD') {
+//           return target.options
+//         }
+
+//         // Ignore specified HTTP methods
+//         if (ignoredMethods.indexOf(property) >= 0) {
+//           throw new Error(`"${key}" cannot be set for HTTP ${property} requests.`)
+//         }
+
+//         // Auto-apply crypto key attributes to request objects
+//         return function () {
+//           const args = Array.from(arguments)
+
+//           if (typeof args[args.length - 1] === 'object') {
+//             args[args.length - 1][key] = value
+//           } else {
+//             args.push(Object.defineProperty({}, key, { value }))
+//           }
+
+//           return target[prop.toLowerCase()](...args)
+//         }
+//       }
+//     })
+//   }
+
+//   return this.#encodingproxy
+// }
+
+// /**
+//  * Encrypt the body of an HTTP request using the specified key.
+//  * @warning JSON bodies are automatically converted to strings
+//  * before encrypting. The HTTP `content-type` header will reflect
+//  * `application/octet-stream` with a `content-encoding` header
+//  * including the encryption algorithm.
+//  * @param {string} key
+//  * The _shared encryption key_ or _public key_ (PEM) used to encrypt
+//  * the body.
+//  * @returns {HttpClient}
+//  * Returns a modified instance of the HTTP client.
+//  */
+// encrypt(key) {
+//   return this.#cryptoproxy('encryptionKey', key, ['GET', 'HEAD', 'JSON', 'JSONP'])
+// }
+
+// /**
+//  * Decrypt the body of an HTTP response, using the specified key.
+//  * @param {string} [key]
+//  * The _shared encryption key_ or _private key_ (PEM) used to decrypt
+//  * the body.
+//  * @returns {HttpClient}
+//  * Returns a modified instance of the HTTP client.
+//  */
+// decrypt(key) {
+//   return this.#cryptoproxy('decryptionKey', key, ['DELETE'])
+// }
+
+// /**
+//    * Sign the body of an HTTP request using the signing key.
+//    * This adds a `signature` HTTP request header.
+//    * @param {string} privateKey
+//    * The privateKey (PEM) used to sign the content.
+//    * @returns {HttpClient}
+//    * Returns a modified instance of the HTTP client.
+//    */
+// sign(key) {
+//   return this.#cryptoproxy('signingKey', key, ['GET', 'DELETE'])
+// }
+
+// /**
+//  * Verify the body of an HTTP response using the verification key.
+//  * This only works if a `signature` HTTP request header is provided
+//  * in the HTTP response.
+//  * @param {string} publicKey
+//  * The publicKey (PEM) used to sign the content.
+//  * @returns {HttpClient}
+//  * Returns a modified instance of the HTTP client.
+//  */
+// verify(key) {
+//   return this.#cryptoproxy('verifcationKey', key)
+// }
