@@ -64,7 +64,6 @@ const bool = v => v === null ? null : forceBoolean(v)
 export default class Resource extends Client {
   #baseUrl
   #request
-  #user
   #secret
   #accessToken
   #accessTokenTimer
@@ -274,10 +273,10 @@ export default class Resource extends Client {
     this.#accessTokenRenewalDuration = Math.floor(coalesce(cfg.tokenRenewalNotice, cfg.tokenrenewalNotice, cfg.tokenRenewalnotice, cfg.tokenrenewalnotice, 0))
 
     // Crypto keys
-    this.#signKey = bool(coalesceb(cfg.signingKey))
-    this.#verifyKey = bool(coalesceb(cfg.verificationKey))
-    this.#encryptKey = bool(coalesceb(cfg.encryptionKey, cfg.encryptKey))
-    this.#decryptKey = bool(coalesceb(cfg.decryptionKey, cfg.decryptKey))
+    this.#signKey = coalesceb(cfg.signingKey)
+    this.#verifyKey = coalesceb(cfg.verificationKey)
+    this.#encryptKey = coalesceb(cfg.encryptionKey, cfg.encryptKey)
+    this.#decryptKey = coalesceb(cfg.decryptionKey, cfg.decryptKey)
 
     /**
      * @cfg {boolean} [encryptAll]
@@ -363,7 +362,7 @@ export default class Resource extends Client {
   }
 
   set signingKey (value) {
-    this.#signKey = bool(value)
+    this.#signKey = value
   }
 
   /**
@@ -376,7 +375,7 @@ export default class Resource extends Client {
   }
 
   set verificationKey (value) {
-    this.#verifyKey = bool(value)
+    this.#verifyKey = value
   }
 
   /**
@@ -389,7 +388,7 @@ export default class Resource extends Client {
   }
 
   set encryptionKey (value) {
-    this.#encryptKey = bool(value)
+    this.#encryptKey = value
   }
 
   /**
@@ -404,7 +403,7 @@ export default class Resource extends Client {
   }
 
   set decryptionKey (value) {
-    this.#decryptKey = bool(value)
+    this.#decryptKey = value
   }
 
   get baseUrl () {
@@ -682,10 +681,7 @@ export default class Resource extends Client {
       return null
     }
 
-    const key = coalesceb(...seed)
-    if (update || key) {
-      return coalesce(key, update)
-    }
+    return coalesceb(coalesceb(...seed), update)
   }
 
   preflight (req, cfg) {

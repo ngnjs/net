@@ -1,9 +1,9 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha.17",
+  "version": "1.0.0-alpha.18",
   "description": "A network communications plugin for NGN.",
   "type": "module",
-  "author": "Corey Butler\n",
+  "author": "Corey Butler",
   "private": false,
   "license": "MIT",
   "homepage": "https://github.com/ngnjs/net",
