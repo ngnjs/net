@@ -236,6 +236,9 @@ export default class HttpClient extends NGN.EventEmitter {
    * The URL to issue the request to.
    * The configuration object accepts all of the NGN Request
    * configuration options (except method, which is defined automatically).
+   * @param {object} [options]
+   * Request options, with keys such as `encrypt`, `decrypt`, `sign`, `verify`,
+   * `encryptionKey`, `decryptionKey`, `signingKey`, or `verificationKey`.
    * @param  {Function} [callback]
    * This receives a JSON response object from the server.
    * @param {Error} callback.error
@@ -247,10 +250,15 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   json (url, callback) {
-    const cfg = typeof url === 'string' ? { url } : {}
+    let cfg = typeof url === 'string' ? { url } : {}
 
     cfg.headers = {
       'Accept': 'application/json, application/ld+json, application/vnd.api+json, */json, */*json;q=0.8'
+    }
+
+    if (typeof callback === 'object') {
+      cfg = Object.assign(cfg, callback)
+      callback = arguments[2] || null
     }
 
     const wrapper = new Promise((resolve, reject) => {

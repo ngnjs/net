@@ -90,6 +90,19 @@ export default class Resource extends Client {
   #decryptAll
   #signAll
   #verifyAll
+  #cryptokey = function (seed, update, allow = true, keywords) {
+    if (!coalesceb(allow, true)) {
+      return null
+    }
+
+    const value = coalesceb(coalesceb(...seed), update)
+
+    if (allow && value === null) {
+      throw new Error(`cannot ${keywords[0]} ${keywords[1]} body without a ${keywords[2]}`)
+    }
+
+    return value
+  }
 
   constructor (cfg = {}) {
     super()
@@ -669,14 +682,6 @@ export default class Resource extends Client {
     return uri.href
   }
 
-  cryptokey (seed, update, allow = true) {
-    if (!coalesceb(allow, true)) {
-      return null
-    }
-
-    return coalesceb(coalesceb(...seed), update)
-  }
-
   /**
    * @method preflight
    * Prepares a request before it is sent.
@@ -686,31 +691,35 @@ export default class Resource extends Client {
    */
   preflight (req, cfg) {
     // Support automatic request body encryption
-    req.encryptionKey = this.cryptokey(
+    req.encryptionKey = this.#cryptokey(
       [cfg.encryptionKey, cfg.encryptKey],
       this.#encryptKey,
-      coalesce(cfg.encrypt, this.#encryptAll)
+      coalesce(cfg.encrypt, this.#encryptAll),
+      ['encrypt', 'request', 'encryption key']
     )
 
     // Support automatic response body decryption
-    req.decryptionKey = this.cryptokey(
+    req.decryptionKey = this.#cryptokey(
       [cfg.decryptionKey, cfg.decryptKey],
       coalesceb(this.#decryptKey, this.#encryptKey),
-      coalesce(cfg.decrypt, this.#decryptKey)
+      coalesce(cfg.decrypt, this.#decryptAll),
+      ['decrypt', 'response', 'decryption key']
     )
 
     // Support automatic request body signing
-    req.signingKey = this.cryptokey(
+    req.signingKey = this.#cryptokey(
       [cfg.signingKey, cfg.signKey],
       this.#signKey,
-      coalesce(cfg.sign, this.#signAll)
+      coalesce(cfg.sign, this.#signAll),
+      ['sign', 'request', 'private key']
     )
 
     // Support automatic response body verification
-    req.verificationKey = this.cryptokey(
+    req.verificationKey = this.#cryptokey(
       [cfg.verificationKey, cfg.verifyKey],
       this.#verifyKey,
-      coalesce(cfg.verify, this.#verifyAll)
+      coalesce(cfg.verify, this.#verifyAll),
+      ['verify', 'response', 'public key']
     )
 
     req.url = this.prepareUrl(req.configuredURL)
