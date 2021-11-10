@@ -51,8 +51,7 @@ export default class HttpClient extends NGN.EventEmitter {
         return cfg
       }),
 
-      send: NGN.hiddenconstant((method, argv) => {
-        const args = argv ? Array.from(argv) : []
+      send: NGN.hiddenconstant((method, args = []) => {
         const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null
         const cfg = this.parseRequestConfig(...args, method.toUpperCase())
         const request = new NgnRequest(cfg)
@@ -112,7 +111,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   options () {
-    return this.send('OPTIONS', arguments)
+    return this.send('OPTIONS', [...arguments])
   }
 
   /**
@@ -129,7 +128,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   head () {
-    return this.send('HEAD', arguments)
+    return this.send('HEAD', [...arguments])
   }
 
   /**
@@ -146,7 +145,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   get () {
-    return this.send('GET', arguments)
+    return this.send('GET', [...arguments])
   }
 
   /**
@@ -163,7 +162,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   post () {
-    let args = Array.from(arguments)
+    let args = [...arguments]
     if (args.length > 1 && typeof args[0] === 'string' && typeof args[1] === 'object') {
       args = [Object.assign({ url: args[0] }, args[1])]
     }
@@ -184,7 +183,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   put () {
-    let args = Array.from(arguments)
+    let args = [...arguments]
     if (args.length > 1 && typeof args[0] === 'string' && typeof args[1] === 'object') {
       args = [Object.assign({ url: args[0] }, args[1])]
     }
@@ -205,7 +204,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   delete () {
-    return this.send('DELETE', arguments)
+    return this.send('DELETE', [...arguments])
   }
 
   /**
@@ -226,7 +225,7 @@ export default class HttpClient extends NGN.EventEmitter {
    */
   trace () {
     WARN('NGN.Request.method', 'An HTTP TRACE request was made.')
-    return this.send('TRACE', arguments)
+    return this.send('TRACE', [...arguments])
   }
 
   /**
@@ -255,7 +254,14 @@ export default class HttpClient extends NGN.EventEmitter {
     }
 
     const wrapper = new Promise((resolve, reject) => {
-      this.send('GET', cfg).then(r => resolve(r.JSON)).catch(reject)
+      this.send('GET', [cfg]).then(r => {
+        const data = r.JSON
+        if (data === null && r.status >= 400) {
+          return reject(new Error('could not parse response body'))
+        }
+
+        resolve(r.JSON)
+      }).catch(reject)
     })
 
     if (callback) {
@@ -339,7 +345,7 @@ export default class HttpClient extends NGN.EventEmitter {
    * @param {Request} request
    * The request to process.
    */
-  preflight (request, configuration) { }
+  preflight (request, configuration) {}
 }
 
 // #encodingproxy = null

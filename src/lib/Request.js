@@ -1058,7 +1058,12 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     }
 
     // Send the request
-    const res = await Fetch(this.#uri, init, this).catch(callback)
+    let res
+    try {
+      res = await Fetch(this.#uri, init, this)
+    } catch (e) {
+      return callback ? callback(e) : e
+    }
 
     // Post-process response body when applicable
     if (coalesceb(res.body) !== null) {

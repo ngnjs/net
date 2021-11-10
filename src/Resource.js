@@ -669,13 +669,6 @@ export default class Resource extends Client {
     return uri.href
   }
 
-  /**
-   * @method preflight
-   * Prepares a request before it is sent.
-   * @param {Request} request
-   * The request object.
-   * @private
-   */
   cryptokey (seed, update, allow = true) {
     if (!coalesceb(allow, true)) {
       return null
@@ -684,6 +677,13 @@ export default class Resource extends Client {
     return coalesceb(coalesceb(...seed), update)
   }
 
+  /**
+   * @method preflight
+   * Prepares a request before it is sent.
+   * @param {Request} request
+   * The request object.
+   * @private
+   */
   preflight (req, cfg) {
     // Support automatic request body encryption
     req.encryptionKey = this.cryptokey(
