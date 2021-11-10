@@ -248,23 +248,21 @@ export default class HttpClient extends NGN.EventEmitter {
    * A promise representing the network request.
    */
   json (url, callback) {
-    if (typeof url === 'string') {
-      url = { url }
+    const cfg = typeof url === 'string' ? { url } : {}
+
+    cfg.headers = {
+      'Accept': 'application/json, application/ld+json, application/vnd.api+json, */json, */*json;q=0.8'
     }
 
-    const request = new NgnRequest(this.parseRequestConfig(url, 'GET'))
-
-    request.setHeader('Accept', 'application/json, application/ld+json, application/vnd.api+json, */json, */*json;q=0.8')
-
-    this.preflight(request)
-
-    const response = request.send()
+    const wrapper = new Promise((resolve, reject) => {
+      this.send('GET', cfg).then(r => resolve(r.JSON)).catch(reject)
+    })
 
     if (callback) {
-      response.then(r => callback(null, r.JSON)).catch(callback)
+      return wrapper.then(data => callback(null, data)).catch(callback)
     }
 
-    return new Promise((resolve, reject) => response.then(r => resolve(r.JSON)).catch(reject))
+    return wrapper
   }
 
   /**
