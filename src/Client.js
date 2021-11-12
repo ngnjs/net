@@ -53,6 +53,14 @@ export default class HttpClient extends NGN.EventEmitter {
 
       send: NGN.hiddenconstant((method, args = []) => {
         const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null
+
+        if (args.length > 0) {
+          if (typeof args[0] === 'string' && typeof args[1] === 'object') {
+            args[1].url = coalesceb(args[1].url, args[0])
+            args.shift()
+          }
+        }
+
         const cfg = this.parseRequestConfig(...args, method.toUpperCase())
         const request = new NgnRequest(cfg)
 

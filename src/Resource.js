@@ -8,7 +8,12 @@ import { coalesce, coalesceb, forceBoolean } from '@ngnjs/libdata'
 const NGN = new Reference().requires('WARN')
 const { WARN } = NGN
 
+// Force boolean values
 const bool = v => v === null ? null : forceBoolean(v)
+
+// Used to map resource configuration attributes to request attributes
+const REQUEST_ATTRIBUTES = new Set(['proxyUsername', 'hash', 'redirect', 'port', 'path', 'host', 'hostname', 'referrerPolicy', 'mode', 'cache', 'proxyAuthType', 'authType'])
+
 
 /**
  * @class Resource
@@ -730,6 +735,16 @@ export default class Resource extends Client {
       req.cache = 'no-cache'
     }
 
+    // Apply configured query parameters
+    for (const [param, value] of Object.entries(coalesceb(cfg.query, {}))) {
+      req.setQueryParameter(param, value)
+    }
+
+    // Apply configured headers
+    for (const [header, value] of Object.entries(coalesceb(cfg.headers, {}))) {
+      req.setHeader(header, value)
+    }
+
     // Force unique URL
     if (this.#unique) {
       req.setQueryParameter('nocache' + (new Date()).getTime().toString() + Math.random().toString().replace('.', ''), '')
@@ -747,6 +762,30 @@ export default class Resource extends Client {
       } else {
         req.removeHeader('user-agent')
         WARN(`Cannot set user agent to "${useragent.trim()}" in a browser. Browsers consider this an unsafe operation and will block the request.`)
+      }
+    }
+
+    // Additional request configuration ovrrides
+    if (coalesceb(cfg.accessToken)) {
+      req.accessToken = cfg.accessToken
+    } else {
+      if (coalesceb(cfg.username)) {
+        req.username = cfg.username
+      }
+      if (req.username && coalesceb(cfg.password)) {
+        req.password = cfg.password
+      }
+    }
+    if (req.accessToken && coalesceb(cfg.accessTokenType)) {
+      req.accessTokenType = cfg.accessTokenType
+    }
+    if (req.proxyUsername && coalesceb(cfg.proxyPassword)) {
+      req.proxyPassword = cfg.proxyPassword
+    }
+
+    for (const attr of REQUEST_ATTRIBUTES) {
+      if (coalesceb(cfg[attr])) {
+        req[attr] = cfg[attr]
       }
     }
   }
