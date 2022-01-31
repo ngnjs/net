@@ -84,6 +84,15 @@ if (NGN.runtime === 'node') {
       }
     }
   })()
+} else if (NGN.runtime === 'deno') {
+  if (Deno?.hostname) {
+    HOSTNAME = Deno.hostname()
+  }
+  if (Deno?.networkInterfaces) {
+    for (const {address} of Deno.networkInterfaces()) {
+      interfaces.add(address)
+    }
+  }
 }
 
 export { HOSTNAME }
