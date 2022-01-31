@@ -229,4 +229,4 @@ Deno doesn't support fetch ReferrerPolicy & Cache. Deno is working on cache supp
 
 ReferrerPolicy is less likely to be necessary in non-browser environments, with the exception of a limited set of proxy and API applications.
 
-The ReferrerPolicy polyfill in `@ngnjs/libnet-node` currently uses the `os` module to identify the server hostname & IP address. This is used to help determine when a referrer is on the same host or not. The hostname feature does not yet exist in Deno, but is on the Deno roadmap. When support for this is available, a ReferrerPolicy polyfill will be made for Deno (if there is enough interest).
+The ReferrerPolicy polyfill in `@ngnjs/libnet-node` currently uses the `os` module to identify the server hostname & IP address. This is used to help determine when a referrer is on the same host or not. Hostname/IP recogniition is unavailable prior to and including Deno 1.18.1.
