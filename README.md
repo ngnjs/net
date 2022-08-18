@@ -149,7 +149,7 @@ For details, see [libcrypto](https://github.com/ngnjs/libcrypto) and [the crypto
 
 ## URL
 
-The `URL` class, often aliases as `Address` is an enhanced version of the [URL API](https://developer.mozilla.org/en-US/docs/Web/API/URL).
+The `URL` class, often aliased as `Address`, is an enhanced version of the [URL API](https://developer.mozilla.org/en-US/docs/Web/API/URL).
 
 ### Query Parameters
 
