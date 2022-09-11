@@ -2,8 +2,16 @@
   "name": "@ngnjs/net",
   "version": "1.0.0-alpha.16",
   "description": "A network communications plugin for NGN.",
+  "main": "./src/index.js",
+  "module": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js"
+    }
+  },
+  "browser": "./index.js",
   "type": "module",
-  "author": "Corey Butler\n",
+  "author": "Corey Butler",
   "private": false,
   "license": "MIT",
   "homepage": "https://github.com/ngnjs/net",
@@ -14,11 +22,8 @@
   "bugs": {
     "url": "https://github.com/ngnjs/net/issues"
   },
-  "main": "src/index.js",
-  "module": "index.js",
-  "browser": "./index.js",
   "peerDependencies": {
-    "ngn": "^2.0.0-alpha.5",
+    "ngn": "^2.0.0-alpha.9",
     "@ngnjs/plugin": ">=1.0.0-alpha.9",
     "@ngnjs/libnet-node": ">=1.0.0-alpha",
     "@ngnjs/libdata": ">=1.0.0-alpha.1"
@@ -92,9 +97,6 @@
         "../libnet-node/.dist/libnet-node:/node_modules/@ngnjs/libnet-node",
         "../libnet-node/src:/source/@ngnjs/libnet-node"
       ],
-      "buildoption": {
-        "preserveEntrySignatures": true
-      },
       "alias": {
         "ngn": "/node_modules/ngn/index.js",
         "@ngnjs/plugin": "/source/@ngnjs/plugin/index.js",
