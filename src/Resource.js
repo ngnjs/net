@@ -3,10 +3,17 @@ import Client from './Client.js'
 import Address from './lib/URL.js'
 import Request from './lib/Request.js'
 import { HOSTNAME, HTTP_METHODS, REDIRECT_MODES } from './lib/constants.js'
-import { coalesce, coalesceb } from '@ngnjs/libdata'
+import { coalesce, coalesceb, forceBoolean } from '@ngnjs/libdata'
 
 const NGN = new Reference().requires('WARN')
 const { WARN } = NGN
+
+// Force boolean values
+const bool = v => v === null ? null : forceBoolean(v)
+
+// Used to map resource configuration attributes to request attributes
+const REQUEST_ATTRIBUTES = new Set(['proxyUsername', 'hash', 'redirect', 'port', 'path', 'host', 'hostname', 'referrerPolicy', 'mode', 'cache', 'proxyAuthType', 'authType'])
+
 
 /**
  * @class Resource
@@ -62,7 +69,6 @@ const { WARN } = NGN
 export default class Resource extends Client {
   #baseUrl
   #request
-  #user
   #secret
   #accessToken
   #accessTokenTimer
@@ -81,6 +87,27 @@ export default class Resource extends Client {
   #redirect
   #referrer
   #referrerPolicy
+  #signKey
+  #verifyKey
+  #encryptKey
+  #decryptKey
+  #encryptAll
+  #decryptAll
+  #signAll
+  #verifyAll
+  #cryptokey = function (seed, update, allow = true, keywords) {
+    if (!coalesceb(allow, true)) {
+      return null
+    }
+
+    const value = coalesceb(coalesceb(...seed), update)
+
+    if (allow && value === null) {
+      throw new Error(`cannot ${keywords[0]} ${keywords[1]} body without a ${keywords[2]}`)
+    }
+
+    return value
+  }
 
   constructor (cfg = {}) {
     super()
@@ -263,6 +290,38 @@ export default class Resource extends Client {
      */
     this.#accessTokenRenewalDuration = Math.floor(coalesce(cfg.tokenRenewalNotice, cfg.tokenrenewalNotice, cfg.tokenRenewalnotice, cfg.tokenrenewalnotice, 0))
 
+    // Crypto keys
+    this.#signKey = coalesceb(cfg.signingKey)
+    this.#verifyKey = coalesceb(cfg.verificationKey)
+    this.#encryptKey = coalesceb(cfg.encryptionKey, cfg.encryptKey)
+    this.#decryptKey = coalesceb(cfg.decryptionKey, cfg.decryptKey)
+
+    /**
+     * @cfg {boolean} [encryptAll]
+     * Automatically attempt to encrypt all request bodies.
+     */
+    this.#encryptAll = bool(coalesceb(cfg.encryptAll, cfg.encryptall))
+
+    /**
+     * @cfg {boolean} [decryptAll]
+     * Automatically attempt to decrypt all response bodies.
+     */
+    this.#decryptAll = bool(coalesceb(cfg.decryptAll, cfg.decryptall))
+
+    /**
+     * @cfg {boolean} [signAll]
+     * Automatically sign all request bodies.
+     */
+    this.#signAll = bool(coalesceb(cfg.signAll, cfg.signall))
+
+    /**
+     * @cfg {boolean} [verifyAll]
+     * Automatically attempt to verify all response bodies.
+     * Throws an error if the body cannot be verified with
+     * the value found in the HTTP response `signature` header.
+     */
+    this.#verifyAll = bool(coalesceb(cfg.verifyAll, cfg.verifyall))
+
     this.on('token.expired', () => {
       clearTimeout(this.#accessTokenTimer)
       clearTimeout(this.#accessTokenRenewalTimer)
@@ -273,6 +332,96 @@ export default class Resource extends Client {
     this.#request.relay('*', this)
 
     this.register('HttpResource', this)
+  }
+
+  /**
+   * @property {boolean} encryptAll
+   * Auto-encrypt all requests by default.
+   * @writeonly
+   */
+  set encryptAll (value) {
+    this.#encryptAll = bool(value)
+  }
+
+  /**
+   * @property {boolean} decryptAll
+   * Auto-decrypt all responses by default.
+   * @writeonly
+   */
+  set decryptAll (value) {
+    this.#decryptAll = bool(value)
+  }
+
+  /**
+   * @property {boolean} signAll
+   * Auto-sign all request bodies by default.
+   * @writeonly
+   */
+  set signAll (value) {
+    this.#signAll = bool(value)
+  }
+
+  /**
+   * @property {boolean} verifyAll
+   * Auto-verify all response bodies by default.
+   * @writeonly
+   */
+  set verifyAll (value) {
+    this.#verifyAll = bool(value)
+  }
+
+  /**
+   * @cfgproperty {string} signingKey
+   * The private key used to sign requests. This can
+   * be an RSA or ECDSA key in PEM format.
+   */
+  get signingKey () {
+    return this.#signKey
+  }
+
+  set signingKey (value) {
+    this.#signKey = value
+  }
+
+  /**
+   * @cfgproperty {string} verificationKey
+   * he public key used to verify requests. This can
+   * be an RSA or ECDSA key in PEM format.
+   */
+  get verificationKey () {
+    return this.#verifyKey
+  }
+
+  set verificationKey (value) {
+    this.#verifyKey = value
+  }
+
+  /**
+   * @cfgproperty {string} encryptionKey
+   * The encryption key is a shared key (string) or private key (PEM) used
+   * to encrypt the body of a request. RSA and ECDSA keys are supported.
+   */
+  get encryptionKey () {
+    return this.#encryptKey
+  }
+
+  set encryptionKey (value) {
+    this.#encryptKey = value
+  }
+
+  /**
+   * @cfgproperty {string} decryptionKey
+   * The decryption key is a shared key (string) or public key (PEM) used
+   * to decrypt the body of a request. RSA and ECDSA keys are supported.
+   * If decryption is requested and no decryption key is specified, the
+   * encryption key will be used (assumes shared key).
+   */
+  get decryptionKey () {
+    return this.#decryptKey
+  }
+
+  set decryptionKey (value) {
+    this.#decryptKey = value
   }
 
   get baseUrl () {
@@ -545,13 +694,55 @@ export default class Resource extends Client {
    * The request object.
    * @private
    */
-  preflight (req) {
+  preflight (req, cfg) {
+    // Support automatic request body encryption
+    req.encryptionKey = this.#cryptokey(
+      [cfg.encryptionKey, cfg.encryptKey],
+      this.#encryptKey,
+      coalesce(cfg.encrypt, this.#encryptAll),
+      ['encrypt', 'request', 'encryption key']
+    )
+
+    // Support automatic response body decryption
+    req.decryptionKey = this.#cryptokey(
+      [cfg.decryptionKey, cfg.decryptKey],
+      coalesceb(this.#decryptKey, this.#encryptKey),
+      coalesce(cfg.decrypt, this.#decryptAll),
+      ['decrypt', 'response', 'decryption key']
+    )
+
+    // Support automatic request body signing
+    req.signingKey = this.#cryptokey(
+      [cfg.signingKey, cfg.signKey],
+      this.#signKey,
+      coalesce(cfg.sign, this.#signAll),
+      ['sign', 'request', 'private key']
+    )
+
+    // Support automatic response body verification
+    req.verificationKey = this.#cryptokey(
+      [cfg.verificationKey, cfg.verifyKey],
+      this.#verifyKey,
+      coalesce(cfg.verify, this.#verifyAll),
+      ['verify', 'response', 'public key']
+    )
+
     req.url = this.prepareUrl(req.configuredURL)
     req.assign(this.#request, false)
 
     // Set no-cache header if configured.
     if (this.#nocache) {
       req.cache = 'no-cache'
+    }
+
+    // Apply configured query parameters
+    for (const [param, value] of Object.entries(coalesceb(cfg.query, {}))) {
+      req.setQueryParameter(param, value)
+    }
+
+    // Apply configured headers
+    for (const [header, value] of Object.entries(coalesceb(cfg.headers, {}))) {
+      req.setHeader(header, value)
     }
 
     // Force unique URL
@@ -571,6 +762,30 @@ export default class Resource extends Client {
       } else {
         req.removeHeader('user-agent')
         WARN(`Cannot set user agent to "${useragent.trim()}" in a browser. Browsers consider this an unsafe operation and will block the request.`)
+      }
+    }
+
+    // Additional request configuration ovrrides
+    if (coalesceb(cfg.accessToken)) {
+      req.accessToken = cfg.accessToken
+    } else {
+      if (coalesceb(cfg.username)) {
+        req.username = cfg.username
+      }
+      if (req.username && coalesceb(cfg.password)) {
+        req.password = cfg.password
+      }
+    }
+    if (req.accessToken && coalesceb(cfg.accessTokenType)) {
+      req.accessTokenType = cfg.accessTokenType
+    }
+    if (req.proxyUsername && coalesceb(cfg.proxyPassword)) {
+      req.proxyPassword = cfg.proxyPassword
+    }
+
+    for (const attr of REQUEST_ATTRIBUTES) {
+      if (coalesceb(cfg[attr])) {
+        req[attr] = cfg[attr]
       }
     }
   }

@@ -91,9 +91,65 @@ By default, a token expiration warning event (`token.pending.expiration`) is tri
 
 Token renewal notices were not designed to auto-renew auth tokens. They were designed to notify the application before a token is expired/removed. Applications can use this feature to renew tokens before they expire (or choose not to).
 
+### Cryptography
+
+This library can use the [NGN cryptography plugin](https://github.com/ngnjs/crypto) to automate common cryptography functions such as encrypting and signing request bodies/decrypting and verifying response bodies.
+
+For example:
+
+```javascript
+import NGN from 'https://cdn.jsdelivr.net/npm/ngn/index.js'
+import 'https://cdn.jsdelivr.net/npm/@ngnjs/crypto/index.js'
+import { Resource } from 'https://cdn.jsdelivr.net/npm/@ngnjs/net/index.js'
+
+const API = new Resource({
+  baseUrl: 'https://api.domain.com',
+  encryptionKey: 'my key',
+  signingKey: privateKey
+  // encryptAll: true,
+  // signAll: true,
+  // decryptAll: true,
+  // signAll: trus
+})
+
+const response = await API.POST('/path/to/endpoint', {
+  body: 'my body',
+  encrypt: true,
+  sign: true
+})
+```
+
+The code above produces a POST request with the following headers:
+
+- `content-encoding: aes256gcm`
+- `content-transfer-encoding: base64`
+- `content-type: application/octet-stream; charset=UTF-8`
+- `signature: ATGtLKdTxjhpWjsKqISSaL28+KW+GIurP8xj/LEZz8ju1gxBeJM4qTwFMVfkER0JuFxEKxUoQt+S2zn7tUqa2HalfuQTRuN50JmldT8eHGtjdmBzydCUjzibVNJpUdISjoJaWfRQdCbtvk6/L1T0HR7XV4pyEFF2Nc2Jbep5ef7z5iFd9Z/ai3V8pARj5zGKdQKpgkx165RP3oAV1IVEc5tqCb5x5BzTaGi1DRvRZXmBgQRA05DPXQEMFYp5Nrt/4M0Z7/dZW8jWQkIKbHL5bWhMUndFgIo/6Aqxt2Lw89Tm2K7BebX0arlgTfcLxFR374CrVOH2G2DJovD4DF3d4g==`
+
+and a body of:
+
+`SGdrAETObPigA5EDWxNXq1zynaAGsrnVCXAKMejoJ1K6cTJ/NBoFb5OykDBxBaV6xyC3`
+
+This request contains the appropriate headers and generated a signature for the encrypted content, which can be verified server side before decrypting. It is possible to sign/verify without encrypting/decrypting (and vice versa).
+
+JSON bodies are automatically converted to strings before encryption. Auto-decryption attempts to `JSON.parse()` the response body, but will not throw an error if it fails to do so.
+
+It is possible to set `encryptAll`, `decryptAll`, `signAll`, and `verifyAll` on a `Resource`. If `encryptAll` is set to `true`, then all request bodies are encrypted using the encryption key, unless a `Request` is set to `encrypt: false`. In other words, it is possible to set a global default in the network Resource, but override it in the network Request.
+
+It is also possible to import specific components of the crypto library if needed. For example:
+
+```javascript
+import NGN from 'https://cdn.jsdelivr.net/npm/ngn/index.js'
+import { generateKeys } from 'https://cdn.jsdelivr.net/npm/@ngnjs/crypto/index.js'
+
+const { publicKey, privateKey } = generateKeys()
+```
+
+For details, see [libcrypto](https://github.com/ngnjs/libcrypto) and [the crypto plugin](https://github.com/ngnjs/crypto).
+
 ## URL
 
-The `URL` class, often aliases as `Address` is an enhanced version of the [URL API](https://developer.mozilla.org/en-US/docs/Web/API/URL).
+The `URL` class, often aliased as `Address`, is an enhanced version of the [URL API](https://developer.mozilla.org/en-US/docs/Web/API/URL).
 
 ### Query Parameters
 
@@ -173,4 +229,4 @@ Deno doesn't support fetch ReferrerPolicy & Cache. Deno is working on cache supp
 
 ReferrerPolicy is less likely to be necessary in non-browser environments, with the exception of a limited set of proxy and API applications.
 
-The ReferrerPolicy polyfill in `@ngnjs/libnet-node` currently uses the `os` module to identify the server hostname & IP address. This is used to help determine when a referrer is on the same host or not. The hostname feature does not yet exist in Deno, but is on the Deno roadmap. When support for this is available, a ReferrerPolicy polyfill will be made for Deno (if there is enough interest).
+The ReferrerPolicy polyfill in `@ngnjs/libnet-node` currently uses the `os` module to identify the server hostname & IP address. This is used to help determine when a referrer is on the same host or not. Hostname/IP recogniition is unavailable prior to and including Deno 1.18.1.
