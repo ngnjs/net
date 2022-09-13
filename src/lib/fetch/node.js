@@ -104,6 +104,12 @@ export default function Fetch (resource, init = {}) {
     delete init.signal
 
     const net = (resource.protocol === 'https:' ? https : http)
+    if (resource.protocol === 'https' && init.rejectUnauthorized === false && !init.hasOwnProperty('agent')) {
+      init.agent = new net.Agent({
+        rejectUnauthorized: false
+      })
+    }
+
     const req = net.request(resource.href, init, res => {
       let body = ''
 
