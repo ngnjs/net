@@ -139,7 +139,8 @@ export default class Resource extends Client {
        * - `error`: abort with an error if a redirect occurs
        * - `manual`: handle redirects manually
        */
-      redirect: coalesce(cfg.redirect, this.#redirect, 'follow')
+      redirect: coalesce(cfg.redirect, this.#redirect, 'follow'),
+      allowInvalidCertificates: coalesceb(cfg.allowInvalidCertificates, false)
     })
 
     /**
@@ -227,6 +228,13 @@ export default class Resource extends Client {
     /**
      * @cfg {boolean} [httpsOnly=false]
      * Set this to true to rewrite all URL's to use HTTPS.
+     */
+
+    /**
+     * @cfg {boolean} [allowInvalidCertificates=false]
+     * Allow HTTPS requests even if the certificate cannot be validated.
+     * @warning This only works in JavaScript runtimes that allow
+     * unauthorized certificates to be used.
      */
 
     /**

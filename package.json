@@ -1,6 +1,6 @@
 {
   "name": "@ngnjs/net",
-  "version": "1.0.0-alpha.23",
+  "version": "1.0.0-alpha.24",
   "description": "A network communications plugin for NGN.",
   "main": "./src/index.js",
   "module": "index.js",

@@ -42,6 +42,7 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
   #verifyKey
   #encryptKey
   #decryptKey
+  #allowInvalidCertificates = true
 
   constructor (cfg = {}) {
     super()
@@ -203,6 +204,8 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
      * for.
      */
     this.mode = coalesceb(cfg.mode)
+
+    this.#allowInvalidCertificates = coalesceb(cfg.allowInvalidCertificates, false)
 
     Object.defineProperties(this, {
       /**
@@ -413,6 +416,21 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
     this.method = coalesceb(cfg.method, 'GET')
 
     this.prepareBody()
+  }
+
+  /**
+   * @cfgproperty {boolean} [allowInvalidCertificates=true]
+   * When set to true, invalid TLS/SSL certificates will
+   * be ignored. This only applies to JavaScript runtimes
+   * which allow unverified HTTPS connections. Most browser
+   * engines do not support this.
+   */
+  get allowInvalidCertificates () {
+    return !this.#allowInvalidCertificates
+  }
+
+  set allowInvalidCertificates (value) {
+    this.#allowInvalidCertificates = !value
   }
 
   /**
@@ -986,7 +1004,8 @@ export default class Request extends NGN.EventEmitter { // eslint-disable-line n
       cache: this.#cache,
       redirect: this.redirect,
       referrer: coalesceb(this.referrer),
-      referrerPolicy: this.#referrerPolicy
+      referrerPolicy: this.#referrerPolicy,
+      rejectUnauthorized: !this.#allowInvalidCertificates
     }
 
     if (this.#cache === 'only-if-cached' || this.#mode !== null) {
